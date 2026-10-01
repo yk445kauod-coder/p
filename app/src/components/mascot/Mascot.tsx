@@ -1,0 +1,244 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from "react-native";
+import { useTheme } from "../../theme/ThemeProvider";
+import { useSettings } from "../../store/settings";
+import { onPointer, emitPointerAway, type Point } from "./pointer";
+import { useI18n } from "../../i18n";
+
+/**
+ * Hoot, the TraceBook mascot.
+ *
+ * Uses the page-mascot owl sprite sheets: two 3x3 atlases (nine head directions
+ * and nine reactions). The pointer's angle picks a direction cell; a tap plays a
+ * reaction and then fires `onPress` so the caller can open the AI chat.
+ */
+
+const SHEETS = {
+  directions: require("../../../assets/mascots/owl-directions.webp"),
+  reactions: require("../../../assets/mascots/owl-reactions.webp"),
+};
+
+const CLOCKWISE = [
+  "right",
+  "down-right",
+  "down",
+  "down-left",
+  "left",
+  "up-left",
+  "up",
+  "up-right",
+] as const;
+type Direction = (typeof CLOCKWISE)[number] | "center";
+
+const REACTIONS = [
+  "blink",
+  "heart",
+  "sparkle",
+  "surprised",
+  "wink",
+  "bashful",
+  "sleepy",
+  "dizzy",
+  "delighted",
+] as const;
+type Reaction = (typeof REACTIONS)[number];
+
+const DIRECTION_INDEX: Record<Direction, number> = {
+  "up-left": 0,
+  up: 1,
+  "up-right": 2,
+  left: 3,
+  center: 4,
+  right: 5,
+  "down-left": 6,
+  down: 7,
+  "down-right": 8,
+};
+
+const REACTION_INDEX: Record<Reaction, number> = {
+  blink: 0,
+  heart: 1,
+  sparkle: 2,
+  surprised: 3,
+  wink: 4,
+  bashful: 5,
+  sleepy: 6,
+  dizzy: 7,
+  delighted: 8,
+};
+
+const SECTOR = (Math.PI * 2) / CLOCKWISE.length;
+const DEAD_ZONE = 64;
+const CELL = 50; // percent offsets for a 3x3 atlas at 300% background size
+
+interface MascotProps {
+  size?: number;
+  onPress?: () => void;
+  label?: string;
+}
+
+export function Mascot({ size = 116, onPress, label }: MascotProps) {
+  const theme = useTheme();
+  const { reduceMotion } = useSettings();
+  const { t } = useI18n();
+  const [direction, setDirection] = useState<Direction>("center");
+  const [reaction, setReaction] = useState<Reaction | null>(null);
+  const [box, setBox] = useState({ x: 0, y: 0, w: size, h: size });
+
+  const squash = useRef(new Animated.Value(0)).current;
+  const wrapRef = useRef<View>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const boops = useRef({ count: 0, at: 0 });
+
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+
+  useEffect(() => clearTimers, [clearTimers]);
+
+  // Window coordinates (not parent-relative) so the gaze angle matches the
+  // pointer, which is reported in window space.
+  const measure = useCallback(() => {
+    wrapRef.current?.measureInWindow((x, y, w, h) => {
+      if (w && h) setBox({ x, y, w, h });
+    });
+  }, []);
+
+  const onLayout = useCallback((_e: LayoutChangeEvent) => measure(), [measure]);
+
+  useEffect(() => {
+    let sector = -1;
+
+    const aim = (p: Point) => {
+      const cx = box.x + box.w / 2;
+      const cy = box.y + box.h / 2;
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      if (Math.hypot(dx, dy) < DEAD_ZONE) {
+        sector = -1;
+        setDirection("center");
+        return;
+      }
+      const angle = Math.atan2(dy, dx);
+      const idx = (Math.round(angle / SECTOR) + CLOCKWISE.length) % CLOCKWISE.length;
+      sector = idx;
+      setDirection(CLOCKWISE[idx]);
+    };
+
+    return onPointer(aim);
+  }, [box]);
+
+  const playReaction = useCallback(
+    (r: Reaction, holdMs: number, next: Reaction | null, nextAfterMs?: number) => {
+      setReaction(r);
+      timers.current.push(
+        setTimeout(() => {
+          if (next) {
+            setReaction(next);
+            timers.current.push(setTimeout(() => setReaction(null), (nextAfterMs ?? 380) + 200));
+          } else {
+            setReaction(null);
+          }
+        }, holdMs),
+      );
+    },
+    [],
+  );
+
+  const handlePress = useCallback(() => {
+    clearTimers();
+    const now = Date.now();
+    const b = boops.current;
+    b.count = now - b.at < 1600 ? b.count + 1 : 1;
+    b.at = now;
+
+    if (b.count >= 4) {
+      b.count = 0;
+      playReaction("dizzy", 1000, null);
+    } else {
+      const payoff: Reaction[] = ["heart", "sparkle", "delighted"];
+      playReaction("blink", 110, payoff[(b.count - 1) % payoff.length], 420);
+    }
+
+    if (!reduceMotion) {
+      squash.setValue(0);
+      Animated.sequence([
+        Animated.timing(squash, { toValue: 1, duration: 130, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(squash, { toValue: 2, duration: 150, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(squash, { toValue: 0, duration: 160, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]).start();
+    }
+
+    onPress?.();
+  }, [clearTimers, playReaction, reduceMotion, squash, onPress]);
+
+  const scaleY = squash.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.86, 1.06] });
+  const scaleX = squash.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 1.1, 0.97] });
+
+  const dirCell = useMemo(() => DIRECTION_INDEX[direction], [direction]);
+  const reactCell = REACTION_INDEX[reaction ?? "blink"];
+
+  const cellStyle = (index: number) => ({
+    left: `${(index % 3) * CELL}%` as const,
+    top: `${Math.floor(index / 3) * CELL}%` as const,
+  });
+
+  return (
+    <Pressable
+      ref={wrapRef as any}
+      onLayout={onLayout}
+      onPress={handlePress}
+      onPressIn={measure}
+      accessibilityRole="button"
+      accessibilityLabel={label ?? t("ai.mascotLabel")}
+      style={[styles.wrap, { width: size, height: size }]}
+    >
+      <Animated.View
+        style={[styles.inner, { transform: [{ scaleX }, { scaleY }] }]}
+      >
+        <View style={styles.atlas}>
+          <Image
+            source={SHEETS.directions}
+            style={[styles.sheet, styles.directions, cellStyle(dirCell), { opacity: reaction ? 0 : 1 }]}
+            resizeMode="stretch"
+          />
+          <Image
+            source={SHEETS.reactions}
+            style={[styles.sheet, styles.reactions, cellStyle(reactCell), { opacity: reaction ? 1 : 0 }]}
+            resizeMode="stretch"
+          />
+        </View>
+      </Animated.View>
+
+      {/* Soft contact shadow so the owl reads as perched, not floating. */}
+      <View
+        style={[
+          styles.shadow,
+          { backgroundColor: theme.colors.primary, width: size * 0.44, opacity: theme.mode === "dark" ? 0.18 : 0.12 },
+        ]}
+      />
+    </Pressable>
+  );
+}
+
+export { emitPointerAway };
+
+const styles = StyleSheet.create({
+  wrap: { alignItems: "center", justifyContent: "flex-end" },
+  inner: { width: "100%", height: "100%", transformOrigin: "50% 78%" } as any,
+  atlas: { flex: 1, width: "100%", height: "100%", overflow: "hidden" },
+  sheet: { position: "absolute", width: "300%", height: "300%" },
+  directions: {},
+  reactions: {},
+  shadow: { position: "absolute", bottom: -2, height: 6, borderRadius: 999 },
+});

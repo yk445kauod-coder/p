@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en" data-theme="dark" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TraceBook — turn reading into a habit you can see</title>
+<meta name="description" content="TraceBook is an installable web app for reading habits — streaks, stats, quotes, goals and an AI reading coach. Works offline. No store, no account." />
+<meta name="theme-color" content="#0C0A18" />
+<link rel="icon" href="favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700;800&family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo: #4338CA;
+    --violet: #7C3AED;
+    --cyan: #22D3EE;
+    --amber: #FBBF24;
+    --rose: #FB7185;
+    --radius: 22px;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.7);
+  }
+  html[data-theme="dark"] {
+    --bg: #0C0A18;
+    --bg-2: #14102A;
+    --surface: rgba(255, 255, 255, 0.045);
+    --surface-solid: #171331;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --text: #F4F1FF;
+    --text-muted: #A9A2C8;
+    --text-faint: #6F688F;
+    --glow: 0.55;
+  }
+  html[data-theme="light"] {
+    --bg: #F7F5FF;
+    --bg-2: #EFEBFF;
+    --surface: rgba(255, 255, 255, 0.75);
+    --surface-solid: #FFFFFF;
+    --border: rgba(30, 20, 70, 0.1);
+    --border-strong: rgba(30, 20, 70, 0.18);
+    --text: #191333;
+    --text-muted: #5A5378;
+    --text-faint: #8A83A8;
+    --glow: 0.3;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  html[dir="rtl"] body { font-family: "Noto Kufi Arabic", var(--font-body); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---- ambient background ---- */
+  .aurora {
+    position: fixed; inset: -20% 0 auto 0; height: 90vh; z-index: 0;
+    background:
+      radial-gradient(42% 55% at 18% 22%, rgba(124, 58, 237, calc(var(--glow) * 0.9)), transparent 70%),
+      radial-gradient(38% 48% at 82% 12%, rgba(34, 211, 238, calc(var(--glow) * 0.7)), transparent 70%),
+      radial-gradient(46% 52% at 55% 40%, rgba(67, 56, 202, calc(var(--glow) * 0.85)), transparent 72%);
+    filter: blur(30px);
+    pointer-events: none;
+  }
+  .grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(circle at 50% 20%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at 50% 20%, #000 0%, transparent 78%);
+    opacity: 0.5;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 0 22px; }
+
+  /* ---- nav ---- */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 16px; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+  .brand img { width: 38px; height: 38px; border-radius: 11px; box-shadow: 0 8px 22px -10px var(--violet); }
+  .nav-spacer { flex: 1; }
+  .nav-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    border-radius: 999px; height: 40px; min-width: 40px; padding: 0 14px; cursor: pointer;
+    font-family: inherit; font-weight: 700; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    transition: border-color .2s, transform .15s, background .2s;
+  }
+  .icon-btn:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+
+  /* ---- hero ---- */
+  header.hero { padding: 74px 0 40px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border-strong); background: var(--surface);
+    border-radius: 999px; padding: 7px 15px; font-size: 12.5px; font-weight: 700;
+    color: var(--text-muted); letter-spacing: 0.02em;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+  h1 {
+    font-family: var(--font-display); font-weight: 900; letter-spacing: -0.035em;
+    font-size: clamp(42px, 6.6vw, 76px); line-height: 0.98; margin: 22px 0 0;
+  }
+  h1 .grad {
+    background: linear-gradient(105deg, var(--amber), var(--rose) 45%, var(--violet));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  html[dir="rtl"] h1 { font-family: "Noto Kufi Arabic", var(--font-display); letter-spacing: 0; line-height: 1.25; }
+  .lede { font-size: clamp(16px, 2vw, 19px); line-height: 1.65; color: var(--text-muted); max-width: 54ch; margin: 22px 0 0; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; align-items: center; }
+  .btn-primary {
+    position: relative; display: inline-flex; align-items: center; gap: 12px;
+    background: linear-gradient(120deg, var(--indigo), var(--violet));
+    color: #fff; font-weight: 800; font-size: 16px;
+    padding: 17px 28px; border-radius: 16px; border: 0; cursor: pointer;
+    font-family: inherit; box-shadow: 0 20px 45px -18px var(--violet);
+    transition: transform .18s, box-shadow .25s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 26px 55px -18px var(--violet); }
+  .btn-primary small { display: block; font-weight: 600; font-size: 11.5px; opacity: .82; margin-top: 2px; }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 9px;
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+    padding: 16px 22px; border-radius: 16px; font-weight: 700; font-size: 15px; cursor: pointer;
+    font-family: inherit; transition: border-color .2s, transform .18s;
+  }
+  .btn-ghost:hover { border-color: var(--violet); transform: translateY(-2px); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 22px; color: var(--text-faint); font-size: 12.5px; font-weight: 600; }
+
+  /* ---- phone mock ---- */
+  .phone-stage { position: relative; display: flex; justify-content: center; }
+  .phone {
+    position: relative; width: 292px; border-radius: 42px; padding: 11px;
+    background: linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,.04));
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow), 0 0 90px -30px var(--violet);
+    animation: float 7s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+  .phone img { width: 100%; display: block; border-radius: 32px; }
+  .glow-ring {
+    position: absolute; inset: -46px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,58,237,.35), transparent 65%);
+    filter: blur(26px); z-index: -1; pointer-events: none;
+  }
+  @media (max-width: 560px) { .glow-ring { display: none; } }
+
+  /* ---- sections ---- */
+  section { padding: 72px 0; }
+  .eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--violet); }
+  h2 { font-family: var(--font-display); font-size: clamp(30px, 4.4vw, 46px); letter-spacing: -0.03em; margin: 12px 0 0; font-weight: 900; }
+  html[dir="rtl"] h2 { font-family: "Noto Kufi Arabic", var(--font-display); letter-spacing: 0; }
+  .section-lede { color: var(--text-muted); font-size: 16.5px; line-height: 1.7; max-width: 62ch; margin-top: 14px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 40px; }
+  .card {
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    padding: 26px; position: relative; overflow: hidden;
+    transition: transform .22s, border-color .22s;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--border-strong); }
+  .card::after {
+    content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--violet), var(--cyan)); opacity: 0; transition: opacity .25s;
+  }
+  .card:hover::after { opacity: 1; }
+  .card-ico {
+    width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+    background: linear-gradient(140deg, rgba(124,58,237,.28), rgba(34,211,238,.16));
+    border: 1px solid var(--border-strong); font-size: 22px; margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .card p { margin: 0; color: var(--text-muted); font-size: 14.5px; line-height: 1.65; }
+
+  /* ---- screenshots ---- */
+  .shots { display: flex; gap: 22px; margin-top: 40px; overflow-x: auto; padding-bottom: 14px; scroll-snap-type: x mandatory; }
+  .shots img {
+    width: 250px; flex: 0 0 auto; border-radius: 26px; border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow); scroll-snap-align: center;
+  }
+
+  /* ---- install steps ---- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 40px; counter-reset: s; }
+  .step { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 26px; }
+  .step .num {
+    width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(120deg, var(--indigo), var(--violet)); color: #fff; font-weight: 800; margin-bottom: 14px;
+  }
+  .step h3 { margin: 0 0 8px; font-size: 16.5px; }
+  .step p { margin: 0; color: var(--text-muted); font-size: 14.5px; line-height: 1.65; }
+  code {
+    background: color-mix(in srgb, var(--violet) 16%, transparent); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 7px; font-size: 13px;
+  }
+
+  /* ---- stack strip ---- */
+  .strip {
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    padding: 26px 30px; display: flex; flex-wrap: wrap; gap: 12px 34px; align-items: center;
+    justify-content: space-between; margin-top: 44px;
+  }
+  .strip span { color: var(--text-muted); font-size: 13.5px; font-weight: 700; }
+  .strip b { color: var(--text); font-weight: 800; }
+
+  footer { border-top: 1px solid var(--border); padding: 42px 0 60px; color: var(--text-faint); font-size: 13.5px; }
+  .foot-grid { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+
+  @media (max-width: 940px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 44px; }
+    .phone-stage { order: -1; }
+    .cards, .steps { grid-template-columns: 1fr; }
+    header.hero { padding-top: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="grid"></div>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top"><img src="logo-mark.png" alt="TraceBook" /> TraceBook</a>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="langBtn" aria-label="Switch language">🌐 <span id="langLabel">العربية</span></button>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch theme">🌙</button>
+      <a class="icon-btn" href="app/"><span data-i18n="openAppNav">Open app</span> ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="pill"><span class="dot"></span> <span data-i18n="pill">Web app · installable · works offline</span></span>
+      <h1 data-i18n-html="h1">Turn reading into a habit <span class="grad">you can see</span>.</h1>
+      <p class="lede" data-i18n="lede">Track every session, watch your streak grow, save the lines that matter, and get a personal AI reading coach — all in one calm, beautiful app that works offline.</p>
+      <div class="cta-row">
+        <a class="btn-primary" href="app/" id="openApp">
+          <span style="font-size:22px">▸</span>
+          <span>
+            <span data-i18n="openApp">Open the web app</span>
+            <small id="dlMeta" data-i18n="openAppSub">Works in your browser · installable · free</small>
+          </span>
+        </a>
+        <a class="btn-ghost" href="#features"><span data-i18n="seeFeatures">See what's inside</span> →</a>
+      </div>
+      <div class="meta">
+        <span data-i18n="meta1">✓ Full CRUD library</span>
+        <span data-i18n="meta2">✓ Streaks &amp; insights</span>
+        <span data-i18n="meta3">✓ Quotes &amp; goals</span>
+        <span data-i18n="meta4">✓ English + مصري</span>
+      </div>
+    </div>
+    <div class="phone-stage">
+      <div class="phone">
+        <div class="glow-ring"></div>
+        <img src="shot-home-dark.png" alt="TraceBook home screen with streak and daily goal" />
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="featuresEyebrow">Everything, included</span>
+    <h2 data-i18n="featuresTitle">Built to make the habit stick</h2>
+    <p class="section-lede" data-i18n="featuresLede">No stripped-down demo. TraceBook ships the whole loop — capture, track, reflect, and get coached.</p>
+    <div class="cards">
+      <div class="card"><div class="card-ico">📚</div><h3 data-i18n="f1t">Library with full CRUD</h3><p data-i18n="f1b">Add, edit, finish, pause or delete books. Search and filter across reading, finished, wishlist and paused.</p></div>
+      <div class="card"><div class="card-ico">🔥</div><h3 data-i18n="f2t">Streaks that keep you honest</h3><p data-i18n="f2b">Daily and best streaks, a 30-day heatmap and a consistency ring so progress is impossible to ignore.</p></div>
+      <div class="card"><div class="card-ico">📈</div><h3 data-i18n="f3t">Insights &amp; stats</h3><p data-i18n="f3b">Minutes, pages, averages, weekly totals and a per-book breakdown of where your reading time actually goes.</p></div>
+      <div class="card"><div class="card-ico">⏱️</div><h3 data-i18n="f4t">Session logging</h3><p data-i18n="f4b">Log with a built-in timer or enter it manually. Attach pages read, a book and a note in seconds.</p></div>
+      <div class="card"><div class="card-ico">💬</div><h3 data-i18n="f5t">Hoot, your AI coach</h3><p data-i18n="f5b">Ask for a two-week plan, a way back from a missed week, or what to read next — grounded in your own stats.</p></div>
+      <div class="card"><div class="card-ico">🎯</div><h3 data-i18n="f6t">Quotes &amp; goals</h3><p data-i18n="f6b">Save lines you love, set a daily minutes target, and choose dark, light or system appearance.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="shots">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="shotsEyebrow">A look inside</span>
+    <h2 data-i18n="shotsTitle">Designed, not templated</h2>
+    <p class="section-lede" data-i18n="shotsLede">Hand-built visuals, a gaze-tracking owl mascot, and a layout that breathes on a phone.</p>
+    <div class="shots">
+      <img src="shot-home-dark.png" alt="Home" />
+      <img src="shot-stats-dark.png" alt="Stats" />
+      <img src="shot-library-dark.png" alt="Library" />
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="installEyebrow">Install in seconds</span>
+    <h2 data-i18n="installTitle">Run it right in your browser</h2>
+    <p class="section-lede" data-i18n="installLede">TraceBook is a progressive web app — no store, no account, no waiting. Open it, then add it to your home screen for a full-screen, offline experience.</p>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3 data-i18n="s1t">Open the web app</h3><p data-i18n="s1b">Tap “Open the web app”. It loads instantly and works on phone, tablet and desktop.</p></div>
+      <div class="step"><div class="num">2</div><h3 data-i18n="s2t">Add to home screen</h3><p data-i18n="s2b">In the app, open Profile → Install app. On iPhone, use Share → Add to Home Screen.</p></div>
+      <div class="step"><div class="num">3</div><h3 data-i18n="s3t">Read anywhere</h3><p data-i18n="s3b">It opens full-screen, keeps working offline, and updates itself. Your data stays on your device.</p></div>
+    </div>
+    <div class="cta-row" style="margin-top:34px">
+      <a class="btn-primary" href="app/">
+        <span style="font-size:20px">▸</span>
+        <span><span data-i18n="openApp">Open the web app</span></span>
+      </a>
+      <a class="btn-ghost js-download" href="https://github.com/yk445kauod-coder/yousef-portfolio/releases/download/tracebook-v1.0.0/tracebook.apk" download>
+        <span>
+          <span data-i18n="downloadApk">Prefer Android? Download the APK</span>
+          <small id="apkMeta" data-i18n="downloadSub">Android 7+ · direct install · no cloud build</small>
+        </span>
+      </a>
+    </div>
+    <div class="strip">
+      <span><b data-i18n="stripBackend">Serverless backend</b> · Cloudflare Workers + KV</span>
+      <span><b data-i18n="stripAi">AI coach</b> · OpenRouter</span>
+      <span><b data-i18n="stripBuild">Installable PWA</b> · offline-first</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div style="display:flex;align-items:center;gap:11px">
+      <img src="logo-mark.png" alt="" style="width:30px;height:30px;border-radius:9px" />
+      <span data-i18n="footer">TraceBook — an offline-first reading tracker.</span>
+    </div>
+    <span data-i18n="footerNote">This page was created by an AI agent (OpenHands) on behalf of the user.</span>
+  </div>
+</footer>
+
+<script>
+  const I18N = {
+    en: {
+      pill: "Web app · installable · works offline",
+      h1: 'Turn reading into a habit <span class="grad">you can see</span>.',
+      lede: "Track every session, watch your streak grow, save the lines that matter, and get a personal AI reading coach — all in one calm, beautiful app that works offline.",
+      openApp: "Open the web app",
+      openAppSub: "Works in your browser · installable · free",
+      openAppNav: "Open app",
+      downloadApk: "Prefer Android? Download the APK",
+      download: "Download APK",
+      downloadSub: "Android 7+ · direct install · no cloud build",
+      seeFeatures: "See what's inside",
+      tryWeb: "Try it in the browser",
+      meta1: "✓ Full CRUD library", meta2: "✓ Streaks & insights", meta3: "✓ Quotes & goals", meta4: "✓ English + مصري",
+      featuresEyebrow: "Everything, included",
+      featuresTitle: "Built to make the habit stick",
+      featuresLede: "No stripped-down demo. TraceBook ships the whole loop — capture, track, reflect, and get coached.",
+      f1t: "Library with full CRUD", f1b: "Add, edit, finish, pause or delete books. Search and filter across reading, finished, wishlist and paused.",
+      f2t: "Streaks that keep you honest", f2b: "Daily and best streaks, a 30-day heatmap and a consistency ring so progress is impossible to ignore.",
+      f3t: "Insights & stats", f3b: "Minutes, pages, averages, weekly totals and a per-book breakdown of where your reading time actually goes.",
+      f4t: "Session logging", f4b: "Log with a built-in timer or enter it manually. Attach pages read, a book and a note in seconds.",
+      f5t: "Hoot, your AI coach", f5b: "Ask for a two-week plan, a way back from a missed week, or what to read next — grounded in your own stats.",
+      f6t: "Quotes & goals", f6b: "Save lines you love, set a daily minutes target, and choose dark, light or system appearance.",
+      shotsEyebrow: "A look inside", shotsTitle: "Designed, not templated",
+      shotsLede: "Hand-built visuals, a gaze-tracking owl mascot, and a layout that breathes on a phone.",
+      installEyebrow: "Install in seconds", installTitle: "Run it right in your browser",
+      installLede: "TraceBook is a progressive web app — no store, no account, no waiting. Open it, then add it to your home screen for a full-screen, offline experience.",
+      s1t: "Open the web app", s1b: "Tap “Open the web app”. It loads instantly and works on phone, tablet and desktop.",
+      s2t: "Add to home screen", s2b: "In the app, open Profile → Install app. On iPhone, use Share → Add to Home Screen.",
+      s3t: "Read anywhere", s3b: "It opens full-screen, keeps working offline, and updates itself. Your data stays on your device.",
+      stripBackend: "Serverless backend", stripAi: "AI coach", stripBuild: "Installable PWA",
+      footer: "TraceBook — an offline-first reading tracker.",
+      footerNote: "This page was created by an AI agent (OpenHands) on behalf of the user.",
+      langLabel: "العربية",
+    },
+    ar: {
+      pill: "تطبيق ويب · يتثبّت · شغّال أوفلاين",
+      h1: 'خلّي القراية عادة <span class="grad">تشوفها بعينك</span>.',
+      lede: "سجّل كل جلسة، شوف سلسلتك بتكبر، احفظ الجُمَل اللي تعجبك، وخُد مدرب قراية شخصي بالذكاء الاصطناعي — كله في تطبيق هادي وشكله حلو وشغّال أوفلاين.",
+      openApp: "افتح التطبيق",
+      openAppSub: "بيشتغل في المتصفح · يتثبّت · مجاني",
+      openAppNav: "افتح التطبيق",
+      downloadApk: "تحب أندرويد؟ نزّل الـ APK",
+      download: "نزّل الـ APK",
+      downloadSub: "أندرويد ٧+ · تثبيت مباشر · من غير بناء سحابي",
+      seeFeatures: "شوف جواه إيه",
+      tryWeb: "جرّبه في المتصفح",
+      meta1: "✓ مكتبة كاملة (إضافة/تعديل/حذف)", meta2: "✓ سلاسل وتحليلات", meta3: "✓ اقتباسات وأهداف", meta4: "✓ إنجليزي + مصري",
+      featuresEyebrow: "كل حاجة موجودة",
+      featuresTitle: "مصمّم عشان العادة تثبت",
+      featuresLede: "مش ديمو ناقص. TraceBook فيه الدورة كاملة — سجّل، تابع، راجع، وخُد نصايح.",
+      f1t: "مكتبة بكل العمليات", f1b: "ضيف، عدّل، خلّص، وقّف أو امسح الكتب. ودوّر وفلتر بين بقرأه وخلّصته ونفسي أقراه والمتوقف.",
+      f2t: "سلاسل تخليك ملتزم", f2b: "السلسلة الحالية وأطول سلسلة، وخريطة آخر ٣٠ يوم، وحلقة انتظام عشان تقدمك يبان.",
+      f3t: "تحليلات وإحصائيات", f3b: "الدقايق والصفحات والمتوسطات وإجمالي الأسبوع، وتفصيل لكل كتاب لوقتك بيروح فين.",
+      f4t: "تسجيل الجلسات", f4b: "سجّل بمؤقّت جوّه التطبيق أو يدوي. ضيف الصفحات والكتاب وملاحظة في ثواني.",
+      f5t: "هوت، مدربك الذكي", f5b: "اطلب خطة أسبوعين، أو طريقة ترجع بيها بعد ما فوّتت أسبوع، أو تقرأ إيه بعد كده — بناءً على أرقامك.",
+      f6t: "اقتباسات وأهداف", f6b: "احفظ الجُمَل اللي تحبها، حدّد هدف دقايق يومي، واختار الوضع الليلي أو النهاري أو حسب النظام.",
+      shotsEyebrow: "نظرة جوه", shotsTitle: "مصمّم، مش قالب جاهز",
+      shotsLede: "رسومات معمولة بإيد، وبومة بتتابع نظراتك، وتصميم مرتاح على الموبايل.",
+      installEyebrow: "ثبّته في ثواني", installTitle: "شغّله على طول في المتصفح",
+      installLede: "TraceBook تطبيق ويب تقدّمي (PWA) — من غير متجر، ومن غير حساب، ومن غير انتظار. افتحه، وبعدين ضيفه على الشاشة الرئيسية عشان يشتغل ملء الشاشة وأوفلاين.",
+      s1t: "افتح التطبيق", s1b: "دوس على “افتح التطبيق”. بيفتح على طول وبيشتغل على الموبايل والتابلت والكمبيوتر.",
+      s2t: "ضيفه على الشاشة الرئيسية", s2b: "من جوّه التطبيق، افتح حسابي ← ثبّت التطبيق. على الآيفون استخدم مشاركة ← إضافة إلى الشاشة الرئيسية.",
+      s3t: "اقرأ في أي مكان", s3b: "بيفتح ملء الشاشة، وبيشتغل أوفلاين، وبيحدّث نفسه. وبياناتك تفضل على جهازك.",
+      stripBackend: "باك-إند سيرفرلس", stripAi: "المدرب الذكي", stripBuild: "PWA يتثبّت",
+      footer: "TraceBook — متتبّع قراية شغّال أوفلاين.",
+      footerNote: "الصفحة دي اتعملت بواسطة وكيل ذكاء اصطناعي (OpenHands) نيابة عن المستخدم.",
+      langLabel: "English",
+    },
+  };
+
+  const root = document.documentElement;
+  const setText = (key) => {
+    const dict = I18N[root.lang === "ar" ? "ar" : "en"];
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      // Elements can carry a richer, runtime-generated string (e.g. the download
+      // button, which appends the live release version and size).
+      const v = el.dataset[root.lang === "ar" ? "ar" : "en"] || dict[el.getAttribute("data-i18n")];
+      if (v) el.textContent = v;
+    });
+    document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+      const v = dict[el.getAttribute("data-i18n-html")];
+      if (v) el.innerHTML = v;
+    });
+    document.getElementById("langLabel").textContent = dict.langLabel;
+  };
+
+  document.getElementById("langBtn").addEventListener("click", () => {
+    const next = root.lang === "ar" ? "en" : "ar";
+    root.lang = next;
+    root.dir = next === "ar" ? "rtl" : "ltr";
+    try { localStorage.setItem("tb.lang", next); } catch (e) {}
+    setText();
+  });
+
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    document.getElementById("themeBtn").textContent = next === "dark" ? "🌙" : "☀️";
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "dark" ? "#0C0A18" : "#F7F5FF");
+    try { localStorage.setItem("tb.theme", next); } catch (e) {}
+  });
+
+  // Restore preferences, else follow the OS.
+  try {
+    const savedTheme = localStorage.getItem("tb.theme");
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    const theme = savedTheme || (prefersLight ? "light" : "dark");
+    root.setAttribute("data-theme", theme);
+    document.getElementById("themeBtn").textContent = theme === "dark" ? "🌙" : "☀️";
+    const savedLang = localStorage.getItem("tb.lang");
+    if (savedLang === "ar") { root.lang = "ar"; root.dir = "rtl"; }
+  } catch (e) {}
+  setText();
+
+  // Resolve the newest APK straight from GitHub, so the page always serves the
+  // latest release without being redeployed. The worker mirrors the GitHub API
+  // (and falls back to it directly if the worker is unreachable).
+  (async () => {
+    const REPO = "yk445kauod-coder/yousef-portfolio";
+    const API = "https://tracebook-api.yk445kauod.workers.dev";
+    let release = null;
+
+    const pick = (assets) => (assets || []).find((a) => /\.apk$/i.test(a.name));
+
+    try {
+      const res = await fetch(API + "/download/release", { cache: "no-store" });
+      const body = await res.json();
+      if (body && body.ok && body.data && body.data.release) release = body.data.release;
+    } catch (e) {}
+
+    if (!release) {
+      try {
+        const res = await fetch("https://api.github.com/repos/" + REPO + "/releases/latest");
+        if (res.ok) {
+          const rel = await res.json();
+          const asset = pick(rel.assets);
+          if (asset) {
+            release = {
+              url: asset.browser_download_url,
+              name: asset.name,
+              size: asset.size,
+              version: rel.tag_name,
+            };
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!release || !release.url) return;
+
+    document.querySelectorAll("a.js-download").forEach((a) => { a.href = release.url; });
+
+    const mb = release.size ? (release.size / 1048576).toFixed(1) + " MB · " : "";
+    const version = (release.version || "").replace(/^tracebook-?/i, "").replace(/^v/i, "");
+    const meta = document.getElementById("apkMeta");
+    if (meta) {
+      const en = `${version ? "v" + version + " · " : ""}${mb}Android 7+ · direct install`;
+      const ar = `${version ? "إصدار " + version + " · " : ""}${mb}أندرويد ٧+ · تثبيت مباشر`;
+      meta.dataset.en = en;
+      meta.dataset.ar = ar;
+      meta.textContent = (root.lang === "ar" || root.dir === "rtl") ? ar : en;
+    }
+  })();
+</script>
+</body>
+</html>

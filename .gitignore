@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# build output
+build/
+dist/
+web-build/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# android / gradle
+app/android/.gradle/
+app/android/build/
+app/android/app/build/
+app/android/local.properties
+.gradle/
+*.apk
+*.aab
+*.keystore
+
+# cloudflare
+.wrangler/
+.dev.vars
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# editor / os
+.DS_Store
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.idea/
+.vscode/
+*.orig.*
+
+# built site (Cloudflare Pages output)
+site/

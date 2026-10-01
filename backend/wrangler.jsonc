@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tracebook-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "observability": { "enabled": true },
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "d25e6d109cd948bb8bdadc857c846587"
+    }
+  ],
+  "vars": {
+    "AI_MODEL": "nvidia/nemotron-3-super-120b-a12b:free",
+    "ALLOWED_ORIGIN": "*",
+    "GITHUB_REPO": "yk445kauod-coder/yousef-portfolio"
+  }
+}

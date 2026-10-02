@@ -60,12 +60,21 @@ private `private.app_config` table (not exposed through the API).
 cd app
 npx tsc --noEmit                                   # typecheck
 npx expo lint                                      # lint
+npx jest                                           # unit tests
 npx expo export --platform web --output-dir dist
 ```
 
 `app/.env` holds only publishable values (`EXPO_PUBLIC_*`): the Supabase URL and
 anon key, and the VAPID public key. Metro caches env values, so pass `--clear`
 after changing `.env`.
+
+### Tests
+
+`jest-expo` runs the suites in `app/__tests__/`: pure logic (`plan`,
+`achievements`, `quotes`), `computeStats` from the data store, the agent NDJSON
+stream parser, and an i18n parity check. The parity test is the important one —
+it asserts `en` and `ar` have identical key sets and identical `{placeholder}`
+tokens, which is exactly the class of bug that is invisible in review.
 
 ### Brand assets
 
@@ -123,7 +132,17 @@ worker will not register.
 
 ## Conventions
 
-- Screens read theme through `useTheme()`, never hardcode colours.
+- Screens read theme through `useTheme()`, never hardcode colours. The palette
+  is the Gen-Z token set in `theme/theme.ts` (saturated violet/pink/lime/cyan,
+  a `premium` gold pair for the paid tier, plus `elevation`, `gradient`,
+  `container`, `breakpoints` and `zIndex`).
+- Every screen renders inside `components/layout.tsx`'s `Screen`, which centres
+  content at `theme.container.content` and owns the safe-area padding. Use
+  `Section` for vertical rhythm and `ChromeSlot` for anything absolutely
+  positioned, so floating chrome lines up with the content column.
+- Hover/press/focus come from `useFinePointer()` + the `Hoverable` /
+  `InteractiveRow` helpers and `focusRing()`; do not invent per-screen states.
+  `Card interactive` and the `Chip` primitive already carry the behaviour.
 - All user-facing strings go through `useI18n().t(...)`. Notifications store
   translation keys and resolve them at push time, so stored copy matches the
   language the reader saw.
@@ -134,6 +153,11 @@ worker will not register.
   `theme/typography.ts` is for surfaces we do not render ourselves, such as
   React Navigation's tab labels. Fonts load in `theme/useAppFonts.ts`.
 - Web deep links accept `?tab=Home|Library|Stats|Profile` for screenshots.
+- Free vs Pro lives in `store/entitlements.tsx`; the tier is the `plan` column on
+  `profiles` (`free` | `pro`). Gate at the call site (`canSendAI`, the active-book
+  cap, `historyDays`) and route to the paywall with `openPaywall()` rather than
+  failing silently. A locally unlocked plan is mirrored to AsyncStorage so a
+  guest preview keeps it; real billing would replace `setPlan` with a checkout.
 - The Stats screen charts live in `app/src/components/analytics/`. Nivo is
   DOM-only, so every chart is a `.web.tsx` component paired with a
   `react-native-svg` fallback that Metro picks for native. `theme.ts` bridges the

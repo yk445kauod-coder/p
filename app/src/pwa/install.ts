@@ -40,15 +40,13 @@ function isIosSafari(): boolean {
 }
 
 export function usePwaInstall() {
-  const [available, setAvailable] = useState(false);
-  const [installed, setInstalled] = useState(false);
-  const [manual, setManual] = useState(false);
+  // Initial PWA state is read once; the effect below only subscribes to changes.
+  const [available, setAvailable] = useState(() => isWeb() && !!window.__tbInstall);
+  const [installed, setInstalled] = useState(isStandalone);
+  const [manual] = useState(() => !isStandalone() && isIosSafari());
 
   useEffect(() => {
     if (!isWeb()) return;
-    const standalone = isStandalone();
-    setInstalled(standalone);
-    setManual(!standalone && isIosSafari());
 
     const refresh = () => setAvailable(!!window.__tbInstall);
     const onInstalled = () => {
@@ -56,7 +54,6 @@ export function usePwaInstall() {
       setAvailable(false);
     };
 
-    refresh();
     window.addEventListener("tb-installable", refresh);
     window.addEventListener("tb-installed", onInstalled);
     window.addEventListener("appinstalled", onInstalled);

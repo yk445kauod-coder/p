@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from "react-native";
 import Svg, { Circle, Line, Path } from "react-native-svg";
 import { useTheme } from "../theme/ThemeProvider";
@@ -47,7 +47,7 @@ export function GridBackground() {
 export function AuroraBackdrop() {
   const theme = useTheme();
   const { reduceMotion } = useSettings();
-  const drift = useRef(new Animated.Value(0)).current;
+  const [drift] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (reduceMotion) return;

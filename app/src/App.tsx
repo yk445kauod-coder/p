@@ -8,7 +8,10 @@ import { ThemeProvider, useTheme } from "./theme/ThemeProvider";
 import { SettingsProvider, useSettings } from "./store/settings";
 import { AuthProvider, useAuth } from "./store/auth";
 import { DataProvider } from "./store/data";
+import { NotificationsProvider } from "./store/notifications";
 import { I18nProvider, useI18n } from "./i18n";
+import { ToastProvider } from "./components/motion/Toast";
+import { ConfettiProvider } from "./components/motion/Confetti";
 
 import { HomeScreen } from "./screens/HomeScreen";
 import { LibraryScreen } from "./screens/LibraryScreen";
@@ -119,11 +122,17 @@ export default function App() {
       <SettingsProvider>
         <Localized>
           <ThemeProvider>
-            <AuthProvider>
-              <DataProvider>
-                <Navigation />
-              </DataProvider>
-            </AuthProvider>
+            <ToastProvider>
+              <ConfettiProvider>
+                <AuthProvider>
+                  <NotificationsProvider>
+                    <DataProvider>
+                      <Navigation />
+                    </DataProvider>
+                  </NotificationsProvider>
+                </AuthProvider>
+              </ConfettiProvider>
+            </ToastProvider>
           </ThemeProvider>
         </Localized>
       </SettingsProvider>

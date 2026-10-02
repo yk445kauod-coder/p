@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Animated, Easing, View } from "react-native";
 import Svg, { Circle, Path, Rect, G, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useTheme } from "../theme/ThemeProvider";
@@ -17,7 +17,7 @@ interface LogoProps {
 export function Logo({ size = 48, animated = false, markOnly = false }: LogoProps) {
   const theme = useTheme();
   const c = theme.colors;
-  const bob = useRef(new Animated.Value(0)).current;
+  const [bob] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!animated) return;

@@ -81,6 +81,37 @@ self.addEventListener("activate", (event) => {{
   );
 }});
 
+self.addEventListener("push", (event) => {{
+  let payload = {{}};
+  try {{
+    payload = event.data ? event.data.json() : {{}};
+  }} catch (e) {{
+    payload = {{ body: event.data ? event.data.text() : "" }};
+  }}
+  const title = payload.title || "TraceBook";
+  const options = {{
+    body: payload.body || "",
+    icon: "icons/icon-192.png",
+    badge: "icons/favicon-64.png",
+    tag: payload.tag || "tracebook",
+    data: {{ url: payload.url || "./" }},
+  }};
+  event.waitUntil(self.registration.showNotification(title, options));
+}});
+
+self.addEventListener("notificationclick", (event) => {{
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "./", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({{ type: "window", includeUncontrolled: true }}).then((list) => {{
+      for (const client of list) {{
+        if (client.url.startsWith(self.registration.scope) && "focus" in client) return client.focus();
+      }}
+      return self.clients.openWindow(target);
+    }})
+  );
+}});
+
 self.addEventListener("fetch", (event) => {{
   const req = event.request;
   if (req.method !== "GET") return;

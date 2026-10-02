@@ -320,15 +320,15 @@
         <span style="font-size:20px">▸</span>
         <span><span data-i18n="openApp">Open the web app</span></span>
       </a>
-      <a class="btn-ghost js-download" href="https://github.com/yk445kauod-coder/yousef-portfolio/releases/download/tracebook-v1.0.0/tracebook.apk" download>
+      <a class="btn-ghost" href="#features">
         <span>
-          <span data-i18n="downloadApk">Prefer Android? Download the APK</span>
-          <small id="apkMeta" data-i18n="downloadSub">Android 7+ · direct install · no cloud build</small>
+          <span data-i18n="seeFeatures">See what's inside</span>
+          <small data-i18n="seeFeaturesSub">Every feature, no install required</small>
         </span>
       </a>
     </div>
     <div class="strip">
-      <span><b data-i18n="stripBackend">Serverless backend</b> · Cloudflare Workers + KV</span>
+      <span><b data-i18n="stripBackend">Serverless backend</b> · Supabase + Edge Functions</span>
       <span><b data-i18n="stripAi">AI coach</b> · OpenRouter</span>
       <span><b data-i18n="stripBuild">Installable PWA</b> · offline-first</span>
     </div>
@@ -354,9 +354,7 @@
       openApp: "Open the web app",
       openAppSub: "Works in your browser · installable · free",
       openAppNav: "Open app",
-      downloadApk: "Prefer Android? Download the APK",
-      download: "Download APK",
-      downloadSub: "Android 7+ · direct install · no cloud build",
+      seeFeaturesSub: "Every feature, no install required",
       seeFeatures: "See what's inside",
       tryWeb: "Try it in the browser",
       meta1: "✓ Full CRUD library", meta2: "✓ Streaks & insights", meta3: "✓ Quotes & goals", meta4: "✓ English + مصري",
@@ -388,9 +386,7 @@
       openApp: "افتح التطبيق",
       openAppSub: "بيشتغل في المتصفح · يتثبّت · مجاني",
       openAppNav: "افتح التطبيق",
-      downloadApk: "تحب أندرويد؟ نزّل الـ APK",
-      download: "نزّل الـ APK",
-      downloadSub: "أندرويد ٧+ · تثبيت مباشر · من غير بناء سحابي",
+      seeFeaturesSub: "كل المزايا، من غير تثبيت",
       seeFeatures: "شوف جواه إيه",
       tryWeb: "جرّبه في المتصفح",
       meta1: "✓ مكتبة كاملة (إضافة/تعديل/حذف)", meta2: "✓ سلاسل وتحليلات", meta3: "✓ اقتباسات وأهداف", meta4: "✓ إنجليزي + مصري",
@@ -461,55 +457,6 @@
   } catch (e) {}
   setText();
 
-  // Resolve the newest APK straight from GitHub, so the page always serves the
-  // latest release without being redeployed. The worker mirrors the GitHub API
-  // (and falls back to it directly if the worker is unreachable).
-  (async () => {
-    const REPO = "yk445kauod-coder/yousef-portfolio";
-    const API = "https://tracebook-api.yk445kauod.workers.dev";
-    let release = null;
-
-    const pick = (assets) => (assets || []).find((a) => /\.apk$/i.test(a.name));
-
-    try {
-      const res = await fetch(API + "/download/release", { cache: "no-store" });
-      const body = await res.json();
-      if (body && body.ok && body.data && body.data.release) release = body.data.release;
-    } catch (e) {}
-
-    if (!release) {
-      try {
-        const res = await fetch("https://api.github.com/repos/" + REPO + "/releases/latest");
-        if (res.ok) {
-          const rel = await res.json();
-          const asset = pick(rel.assets);
-          if (asset) {
-            release = {
-              url: asset.browser_download_url,
-              name: asset.name,
-              size: asset.size,
-              version: rel.tag_name,
-            };
-          }
-        }
-      } catch (e) {}
-    }
-
-    if (!release || !release.url) return;
-
-    document.querySelectorAll("a.js-download").forEach((a) => { a.href = release.url; });
-
-    const mb = release.size ? (release.size / 1048576).toFixed(1) + " MB · " : "";
-    const version = (release.version || "").replace(/^tracebook-?/i, "").replace(/^v/i, "");
-    const meta = document.getElementById("apkMeta");
-    if (meta) {
-      const en = `${version ? "v" + version + " · " : ""}${mb}Android 7+ · direct install`;
-      const ar = `${version ? "إصدار " + version + " · " : ""}${mb}أندرويد ٧+ · تثبيت مباشر`;
-      meta.dataset.en = en;
-      meta.dataset.ar = ar;
-      meta.textContent = (root.lang === "ar" || root.dir === "rtl") ? ar : en;
-    }
-  })();
 </script>
 </body>
 </html>

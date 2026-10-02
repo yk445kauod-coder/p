@@ -1,21 +1,14 @@
 import React, { useMemo, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData, type Book, type BookStatus } from "../store/data";
 import { useI18n, type TranslationKey } from "../i18n";
-import { Button, Card, ProgressBar, Badge } from "../components/ui";
+import { Card, ProgressBar, Badge } from "../components/ui";
 import { GridBackground } from "../components/visuals";
 import { AddBookSheet } from "../components/AddBookSheet";
 import { BookDetailSheet } from "../components/BookDetailSheet";
+import { categoryLabel } from "../domain/achievements";
 
 const FILTERS: { key: BookStatus | "all"; labelKey: TranslationKey }[] = [
   { key: "all", labelKey: "library.filter.all" },
@@ -36,19 +29,22 @@ export function LibraryScreen() {
   const theme = useTheme();
   const c = theme.colors;
   const insets = useSafeAreaInsets();
-  const { books } = useData();
-  const { t } = useI18n();
+  const { books, futureBooks } = useData();
+  const { t, lang } = useI18n();
   const [filter, setFilter] = useState<BookStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<Book | null>(null);
+  const [showNext, setShowNext] = useState(false);
+
+  const source = showNext ? futureBooks : books;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return books
-      .filter((b) => (filter === "all" ? true : b.status === filter))
+    return source
+      .filter((b) => (showNext || filter === "all" ? true : b.status === filter))
       .filter((b) => (q ? b.title.toLowerCase().includes(q) || (b.author ?? "").toLowerCase().includes(q) : true));
-  }, [books, filter, query]);
+  }, [filter, query, showNext, source]);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -56,10 +52,9 @@ export function LibraryScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <Text style={[styles.title, { color: c.text }]}>{t("library.title")}</Text>
         <Text style={[styles.subtitle, { color: c.textMuted }]}>
-          {books.length === 1
-            ? t("library.count", { count: books.length })
-            : t("library.countPlural", { count: books.length })}
+          {books.length === 1 ? t("library.count", { count: books.length }) : t("library.countPlural", { count: books.length })}
         </Text>
+
         <TextInput
           value={query}
           onChangeText={setQuery}
@@ -67,44 +62,63 @@ export function LibraryScreen() {
           placeholderTextColor={c.textFaint}
           style={[styles.search, { color: c.text, borderColor: c.border, backgroundColor: c.surface }]}
         />
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
-            return (
-              <Pressable
-                key={f.key}
-                onPress={() => setFilter(f.key)}
-                style={[
-                  styles.filterChip,
-                  { borderColor: active ? c.primary : c.border, backgroundColor: active ? c.primarySoft : "transparent" },
-                ]}
-              >
-                <Text style={{ color: active ? c.primary : c.textMuted, fontSize: 13, fontWeight: "600" }}>
-                  {t(f.labelKey)}
-                </Text>
-              </Pressable>
-            );
-          })}
+          <Pressable
+            onPress={() => {
+              setShowNext((v) => !v);
+              setFilter("all");
+            }}
+            style={[
+              styles.filterChip,
+              { borderColor: showNext ? c.accent : c.border, backgroundColor: showNext ? c.accentSoft : "transparent" },
+            ]}
+          >
+            <Text style={{ color: showNext ? c.accent : c.textMuted, fontSize: 13, fontWeight: "600" }}>
+              📋 {t("addBook.shelfNext")} ({futureBooks.length})
+            </Text>
+          </Pressable>
+          {!showNext &&
+            FILTERS.map((f) => {
+              const active = filter === f.key;
+              return (
+                <Pressable
+                  key={f.key}
+                  onPress={() => setFilter(f.key)}
+                  style={[
+                    styles.filterChip,
+                    { borderColor: active ? c.primary : c.border, backgroundColor: active ? c.primarySoft : "transparent" },
+                  ]}
+                >
+                  <Text style={{ color: active ? c.primary : c.textMuted, fontSize: 13, fontWeight: "600" }}>
+                    {t(f.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
         </ScrollView>
       </View>
 
       <FlatList
         data={filtered}
         keyExtractor={(b) => b.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 140, gap: 12 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 150, gap: 12 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <Card>
-            <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21 }}>{t("library.empty")}</Text>
+            <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21 }}>
+              {showNext ? t("library.emptyNext") : t("library.empty")}
+            </Text>
           </Card>
         }
         renderItem={({ item }) => {
-          const pct = item.totalPages ? item.currentPage / item.totalPages : 0;
+          const pct = item.total_pages ? item.current_page / item.total_pages : 0;
+          const cat = categoryLabel(item.category, lang);
           return (
-            <Pressable onPress={() => setSelected(item)}>
+            <Pressable onPress={() => setSelected(item)} accessibilityRole="button">
               <Card>
                 <View style={styles.bookRow}>
-                  <View style={[styles.cover, { backgroundColor: item.coverColor ?? c.primary }]}>
+                  <View style={[styles.cover, { backgroundColor: item.cover_color ?? c.primary }]}>
                     <Text style={styles.coverInitial}>{item.title.slice(0, 1).toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -116,12 +130,11 @@ export function LibraryScreen() {
                     </View>
                     <Text style={[styles.bookAuthor, { color: c.textMuted }]} numberOfLines={1}>
                       {item.author ?? t("common.unknownAuthor")}
+                      {cat ? ` · ${cat.icon} ${lang === "ar" ? cat.ar : cat.en}` : ""}
                     </Text>
                     <View style={styles.progressRow}>
-                      <ProgressBar value={pct} color={item.coverColor ?? c.primary} />
-                      <Text style={[styles.progressText, { color: c.textMuted }]}>
-                        {Math.round(pct * 100)}%
-                      </Text>
+                      <ProgressBar value={pct} color={item.cover_color ?? c.primary} />
+                      <Text style={[styles.progressText, { color: c.textMuted }]}>{Math.round(pct * 100)}%</Text>
                     </View>
                   </View>
                 </View>
@@ -136,13 +149,13 @@ export function LibraryScreen() {
         style={({ pressed }) => [
           styles.fab,
           { backgroundColor: c.primary, bottom: insets.bottom + 92, opacity: pressed ? 0.9 : 1 },
-          theme.shadow,
+          theme.shadowLg,
         ]}
         accessibilityRole="button"
-        accessibilityLabel="Add a book"
+        accessibilityLabel={t("library.addBook")}
       >
-        <Text style={{ color: c.bgElevated, fontSize: 22, fontWeight: "700", marginTop: -2 }}>+</Text>
-        <Text style={{ color: c.bgElevated, fontSize: 15, fontWeight: "700" }}>{t("library.addBook")}</Text>
+        <Text style={{ color: c.onPrimary, fontSize: 22, fontWeight: "700", marginTop: -2 }}>+</Text>
+        <Text style={{ color: c.onPrimary, fontSize: 15, fontWeight: "700" }}>{t("library.addBook")}</Text>
       </Pressable>
 
       <AddBookSheet visible={addOpen} onClose={() => setAddOpen(false)} />

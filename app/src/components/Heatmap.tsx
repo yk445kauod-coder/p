@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 import type { DayStat } from "../store/data";
 

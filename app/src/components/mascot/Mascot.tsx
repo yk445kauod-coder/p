@@ -6,11 +6,11 @@ import {
   Pressable,
   StyleSheet,
   View,
-  type GestureResponderEvent,
   type LayoutChangeEvent,
 } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useSettings } from "../../store/settings";
+import { useFinePointer } from "../../theme/useReducedMotion";
 import { onPointer, emitPointerAway, type Point } from "./pointer";
 import { useI18n } from "../../i18n";
 
@@ -39,18 +39,7 @@ const CLOCKWISE = [
 ] as const;
 type Direction = (typeof CLOCKWISE)[number] | "center";
 
-const REACTIONS = [
-  "blink",
-  "heart",
-  "sparkle",
-  "surprised",
-  "wink",
-  "bashful",
-  "sleepy",
-  "dizzy",
-  "delighted",
-] as const;
-type Reaction = (typeof REACTIONS)[number];
+type Reaction = "blink" | "heart" | "sparkle" | "surprised" | "wink" | "bashful" | "sleepy" | "dizzy" | "delighted";
 
 const DIRECTION_INDEX: Record<Direction, number> = {
   "up-left": 0,
@@ -89,12 +78,13 @@ interface MascotProps {
 export function Mascot({ size = 116, onPress, label }: MascotProps) {
   const theme = useTheme();
   const { reduceMotion } = useSettings();
+  const finePointer = useFinePointer();
   const { t } = useI18n();
   const [direction, setDirection] = useState<Direction>("center");
   const [reaction, setReaction] = useState<Reaction | null>(null);
   const [box, setBox] = useState({ x: 0, y: 0, w: size, h: size });
 
-  const squash = useRef(new Animated.Value(0)).current;
+  const [squash] = useState(() => new Animated.Value(0));
   const wrapRef = useRef<View>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const boops = useRef({ count: 0, at: 0 });
@@ -117,7 +107,9 @@ export function Mascot({ size = 116, onPress, label }: MascotProps) {
   const onLayout = useCallback((_e: LayoutChangeEvent) => measure(), [measure]);
 
   useEffect(() => {
-    let sector = -1;
+    // Touch-only devices have no cursor to follow, so the gaze stays centred
+    // instead of jumping to wherever the last tap landed.
+    if (!finePointer) return;
 
     const aim = (p: Point) => {
       const cx = box.x + box.w / 2;
@@ -125,18 +117,16 @@ export function Mascot({ size = 116, onPress, label }: MascotProps) {
       const dx = p.x - cx;
       const dy = p.y - cy;
       if (Math.hypot(dx, dy) < DEAD_ZONE) {
-        sector = -1;
         setDirection("center");
         return;
       }
       const angle = Math.atan2(dy, dx);
       const idx = (Math.round(angle / SECTOR) + CLOCKWISE.length) % CLOCKWISE.length;
-      sector = idx;
       setDirection(CLOCKWISE[idx]);
     };
 
     return onPointer(aim);
-  }, [box]);
+  }, [box, finePointer]);
 
   const playReaction = useCallback(
     (r: Reaction, holdMs: number, next: Reaction | null, nextAfterMs?: number) => {
@@ -185,7 +175,9 @@ export function Mascot({ size = 116, onPress, label }: MascotProps) {
   const scaleY = squash.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.86, 1.06] });
   const scaleX = squash.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 1.1, 0.97] });
 
-  const dirCell = useMemo(() => DIRECTION_INDEX[direction], [direction]);
+  // Touch-only devices keep a centred gaze; a coarse pointer is not a cursor.
+  const shown = finePointer ? direction : "center";
+  const dirCell = useMemo(() => DIRECTION_INDEX[shown], [shown]);
   const reactCell = REACTION_INDEX[reaction ?? "blink"];
 
   const cellStyle = (index: number) => ({

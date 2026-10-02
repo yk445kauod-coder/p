@@ -42,3 +42,6 @@ yarn-error.*
 
 # built site (Cloudflare Pages output)
 site/
+
+# Supabase CLI local state (linked project ref, cache)
+supabase/.temp/

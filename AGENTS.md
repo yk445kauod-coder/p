@@ -1,58 +1,71 @@
 # TraceBook
 
-Reading-habit tracker: Expo (SDK 57) app + Cloudflare Workers backend, shipped as a locally built Android APK.
+Reading-habit tracker shipped as an installable, mobile-first web app (PWA).
+Expo/React Native app exports to `react-native-web`; Supabase provides Postgres,
+auth and edge functions. There is no Android build — the APK was cancelled.
 
 ## Layout
 
 ```
 app/       Expo React Native app (exports to an installable PWA via react-native-web)
-backend/   Cloudflare Worker (Hono-style router, D1 + KV)
+supabase/  Edge functions: agent/ (AI coach), push/ (Web Push delivery)
 landing/   Static marketing page (also holds `_headers` and the app screenshots)
 scripts/   build_site.sh - builds the whole web surface into site/
 site/      Build output: landing page at /, PWA at /app/ (git-ignored)
 ```
 
-## Backend
+## Data & auth
+
+Everything server-side lives in Supabase (project ref `rxjwygaemyxxcegiiuev`).
+
+- `app/src/lib/supabase.ts` owns the single client. On web the session is in
+  localStorage; on native it uses AsyncStorage. `detectSessionInUrl` is off
+  because the app owns its routing.
+- `app/src/api/db.ts` is the typed data layer (books, sessions, quotes, goals,
+  weekly reviews, notifications, push subscriptions). All access is RLS-scoped
+  to the signed-in user.
+- Guest mode keeps data in AsyncStorage only; `cloudAvailable` in the auth store
+  reports whether a Supabase project was configured at build time.
+
+## Edge functions
 
 ```bash
-cd backend
-npx wrangler dev --port 12000 --local     # serves on 0.0.0.0:12000
+npx supabase functions deploy agent --project-ref rxjwygaemyxxcegiiuev
+npx supabase functions deploy push  --project-ref rxjwygaemyxxcegiiuev --no-verify-jwt
 ```
 
-- D1 database `tracebook`, KV namespace for sessions.
-- Secrets live in `backend/.dev.vars`: `OPENROUTER_API_KEY`, `AI_MODEL`.
-- Routes: `/health`, `/auth/*`, `/books`, `/sessions`, `/sessions/stats`,
-  `/quotes`, `/goals`, `/ai/chat`. All non-health routes need
-  `Authorization: Bearer <token>`.
+- `agent/` — the AI coach. Holds the model provider key, talks to Postgres as
+  the signed-in user, and exposes tools over the reader's own data. No secret
+  ever reaches the bundle.
+- `push/` — Web Push delivery. Implements RFC 8291 payload encryption and VAPID
+  JWTs with WebCrypto, because the runtime provides neither. Two paths: the
+  signed-in user pushes to their own devices, and a cron path
+  (`{"mode":"reminders","zone":...}`, header `x-cron-secret`) fans out daily
+  reminders. Dead endpoints (404/410) are pruned.
+
+Function secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`,
+`CRON_SECRET`, plus the provider key used by `agent`. Set them with
+`npx supabase secrets set --project-ref rxjwygaemyxxcegiiuev ...`.
+
+## Reminders
+
+`pg_cron` runs `public.send_reading_reminders()` every quarter hour; the job
+calls the `push` function once per timezone so each reader is reminded at their
+local `notify_reminder_time`. The function URL and cron secret live in the
+private `private.app_config` table (not exposed through the API).
 
 ## App
 
 ```bash
 cd app
 npx tsc --noEmit                                   # typecheck
-npx expo export --platform web --output-dir /tmp/tb_web
+npx expo lint                                      # lint
+npx expo export --platform web --output-dir dist
 ```
 
-`EXPO_PUBLIC_API_URL` in `app/.env` must point at the worker's public URL.
-Metro caches env values, so pass `--clear` after changing `.env`.
-
-### Local APK build (no cloud)
-
-Requires JDK 17 and the Android SDK. This environment has them at
-`/opt/jdk17` and `/opt/android-sdk`.
-
-```bash
-export JAVA_HOME=/opt/jdk17
-export ANDROID_HOME=/opt/android-sdk ANDROID_SDK_ROOT=/opt/android-sdk
-export PATH=$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH
-
-cd app
-npx expo prebuild --platform android --clean
-cd android && ./gradlew assembleRelease
-# output: android/app/build/outputs/apk/release/app-release.apk
-```
-
-The SDK directory must be writable — Gradle installs the NDK on first run.
+`app/.env` holds only publishable values (`EXPO_PUBLIC_*`): the Supabase URL and
+anon key, and the VAPID public key. Metro caches env values, so pass `--clear`
+after changing `.env`.
 
 ### Brand assets
 
@@ -66,9 +79,11 @@ Renders `icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`
 ## i18n
 
 `app/src/i18n/` holds the copy deck. Two locales: `en` and `ar` (Egyptian
-dialect). Keys are flat (`home.greetingMorning`), placeholders are `{name}`.
-The language choice persists in settings; RTL needs an app reload because
-`I18nManager` resolves direction at startup.
+dialect). Keys are flat (`home.greetingMorning`), placeholders are `{name}`. The
+two dictionaries must stay in lockstep — `TranslationKey` is derived from `en`,
+so a key missing from `ar` is a type error. The language choice persists in
+settings; RTL needs an app reload because `I18nManager` resolves direction at
+startup.
 
 ## Distribution
 
@@ -87,25 +102,11 @@ npx wrangler pages deploy site --project-name=tracebook --branch=main
 `build_site.sh` exports the Expo web bundle, then runs
 `app/scripts/build_pwa.py`, which generates the icon set from
 `app/assets/logo-mark.png`, writes `manifest.webmanifest` and a precaching
-`sw.js`, stages the screenshots, and injects the PWA meta tags. Asset URLs are
-made relative and `experiments.baseUrl` in `app.json` is `/app`, so the bundle
-works under the `/app/` sub-path. `landing/_headers` keeps `sw.js` uncached and
-marks the hashed bundles immutable.
-
-The Android APK remains as a secondary download. It is published as a GitHub
-Release asset, which gives a permanent, free, key-less URL:
-
-```
-https://github.com/yk445kauod-coder/yousef-portfolio/releases/download/tracebook-v1.0.0/tracebook.apk
-```
-
-The landing page resolves the newest APK at runtime through the Worker
-(`/download/release`) with a direct GitHub API fallback, so it never needs
-redeploying to pick up a new build.
-
-To cut a new APK: `gradlew assembleRelease`, then `POST` a release to
-`/repos/<owner>/<repo>/releases` and upload the APK to
-`https://uploads.github.com/repos/<owner>/<repo>/releases/<id>/assets?name=tracebook.apk`.
+`sw.js` (offline shell, push and notificationclick handlers), stages the
+screenshots, and injects the PWA meta tags. Asset URLs are made relative and
+`experiments.baseUrl` in `app.json` is `/app`, so the bundle works under the
+`/app/` sub-path. `landing/_headers` keeps `sw.js` uncached and marks the hashed
+bundles immutable.
 
 Preview the built site locally with `python3 -m http.server -d site` — the app
 must be served from `/app/`, not opened as a `file://` path, or the service
@@ -114,12 +115,14 @@ worker will not register.
 ## Conventions
 
 - Screens read theme through `useTheme()`, never hardcode colours.
-- All user-facing strings go through `useI18n().t(...)`.
+- All user-facing strings go through `useI18n().t(...)`. Notifications store
+  translation keys and resolve them at push time, so stored copy matches the
+  language the reader saw.
 - Web deep links accept `?tab=Home|Library|Stats|Profile` for screenshots.
 - The mascot (`app/src/components/mascot/`) uses the ready-made owl sprite
   sheets from the `page-mascot` skill — two 3x3 atlases (directions +
   reactions) at `app/assets/mascots/owl-*.webp`. Do not hand-draw or regenerate
   them; to swap characters, drop in another `<name>-{directions,reactions}.webp`
   pair from https://koboyo.com/page-mascot/mascots/ and update `SHEETS`.
-- Anything PWA-related (install prompt, theme-color, service worker) is
+- Anything PWA-related (install prompt, theme-color, service worker, push) is
   web-guarded via `Platform.OS === "web"` so native builds are unaffected.

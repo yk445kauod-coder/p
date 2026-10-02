@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 import { useData } from "@/store/data";
+import { useAuth } from "@/store/auth";
 import { useI18n } from "@/i18n/provider";
 import { PageHeader, Section } from "@/components/page";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +18,7 @@ import { LANGUAGES } from "@/i18n";
 import { RITUAL_DRINKS } from "@/data/types";
 import { HHMM, cn } from "@/lib/utils";
 import { PaywallDialog } from "@/components/paywall-dialog";
+import { syncAll } from "@/lib/sync";
 
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
@@ -23,12 +26,26 @@ const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 export default function ProfilePage() {
   const { t, lang, setLang } = useI18n();
   const { preferences, setPreferences, stats, clearAll } = useData();
+  const { reader, cloudAvailable, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [confirmClear, setConfirmClear] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const isPro = preferences.plan === "pro";
   const dark = resolvedTheme === "dark";
+
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      const { pushed, pulled } = await syncAll();
+      toast.success(`↑${pushed} · ↓${pulled}`, { icon: "🔄" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div>
@@ -40,9 +57,9 @@ export default function ProfilePage() {
           <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-2xl" aria-hidden>
             📖
           </div>
-          <p className="font-semibold">{t("profile.reader")}</p>
+          <p className="font-semibold">{reader?.displayName ?? reader?.email ?? t("profile.reader")}</p>
           <div className="flex flex-wrap justify-center gap-2">
-            <Badge variant="secondary">{t("profile.guest")}</Badge>
+            <Badge variant="secondary">{reader ? reader.email : t("profile.guest")}</Badge>
             <Badge variant={isPro ? "default" : "outline"}>
               {isPro ? `✨ ${t("profile.memberPro")}` : t("profile.memberFree")}
             </Badge>
@@ -52,9 +69,36 @@ export default function ProfilePage() {
               {t("profile.upgrade")}
             </Button>
           ) : null}
-          <p className="text-xs text-muted-foreground">{t("profile.guestHint")}</p>
+          {!reader ? <p className="text-xs text-muted-foreground">{t("profile.guestHint")}</p> : null}
         </CardContent>
       </Card>
+
+      {/* Account + sync. Only meaningful when Supabase is configured. */}
+      {cloudAvailable ? (
+        <Section title={t("profile.account")}>
+          <Card>
+            <CardContent className="grid gap-3 p-4">
+              {reader ? (
+                <>
+                  <Button variant="outline" className="w-full" onClick={runSync} disabled={syncing}>
+                    <RefreshCw className={cn("mr-1.5 h-4 w-4", syncing && "animate-spin")} aria-hidden />
+                    {syncing ? t("common.loading") : t("profile.signIn")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-destructive hover:text-destructive"
+                    onClick={() => void logout()}
+                  >
+                    {t("profile.signOut")}
+                  </Button>
+                </>
+              ) : (
+                <SignInForm />
+              )}
+            </CardContent>
+          </Card>
+        </Section>
+      ) : null}
 
       <Section title={t("profile.appearance")}>
         <Card>
@@ -258,6 +302,80 @@ export default function ProfilePage() {
 
 function toggle(list: number[], value: number): number[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value].sort();
+}
+
+/**
+ * Email + password sign-in / sign-up.
+ *
+ * Optional: the app works fully as a guest, so this is only rendered when a
+ * Supabase project is configured.
+ */
+function SignInForm() {
+  const { t } = useI18n();
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      if (mode === "login") await login(email.trim(), password);
+      else await register(email.trim(), password);
+      toast.success(t("profile.signIn"), { icon: "✅" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex rounded-lg border border-border p-1">
+        {(["login", "register"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            aria-pressed={mode === m}
+            className={cn(
+              "min-h-9 flex-1 rounded-md text-sm font-medium transition-colors",
+              mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            {m === "login" ? t("profile.signIn") : t("profile.signIn")}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="auth-email">{t("addBook.title")}</Label>
+        <Input
+          id="auth-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="auth-password">{t("addBook.title")}</Label>
+        <Input
+          id="auth-password"
+          type="password"
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+      <Button className="w-full" onClick={submit} disabled={busy}>
+        {t("profile.signIn")}
+      </Button>
+    </div>
+  );
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {

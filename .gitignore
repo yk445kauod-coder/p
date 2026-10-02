@@ -45,3 +45,7 @@ site/
 
 # Supabase CLI local state (linked project ref, cache)
 supabase/.temp/
+
+# Python bytecode
+__pycache__/
+*.pyc

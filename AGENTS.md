@@ -108,6 +108,15 @@ screenshots, and injects the PWA meta tags. Asset URLs are made relative and
 `/app/` sub-path. `landing/_headers` keeps `sw.js` uncached and marks the hashed
 bundles immutable.
 
+Expo emits package-vendored assets (fonts, icons) under
+`assets/node_modules/...`, and Cloudflare Pages silently refuses to upload any
+path containing a `node_modules` segment. The build renames that directory to
+`assets/vendor`, rewrites the `/assets/node_modules/` URLs baked into the
+exported HTML and JS, and re-hashes the bundle so its content-addressed name
+still matches its bytes. Without this the fonts 404, `useFonts` never resolves,
+and the deployed app hangs on its splash forever — even though the same build
+works when served locally.
+
 Preview the built site locally with `python3 -m http.server -d site` — the app
 must be served from `/app/`, not opened as a `file://` path, or the service
 worker will not register.

@@ -12,8 +12,10 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -45,6 +47,63 @@ def make_icon(logo: Image.Image, out: Path, size: int, scale: float, maskable: b
     canvas.alpha_composite(mark, off)
     out.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(out, "PNG", optimize=True)
+
+
+def flatten_node_modules(root: Path) -> int:
+    """Rename `assets/node_modules` so no emitted path contains that segment.
+
+    Cloudflare Pages refuses to upload any file whose path contains a
+    `node_modules` segment, so the Expo asset tree (fonts, images vendored from
+    packages) is silently dropped and the deployed app hangs on its splash. The
+    directory holds only content-hashed, build-time-copied files — it is not a
+    package tree — so moving it to `assets/vendor` is safe.
+
+    The exported HTML and JS embed absolute `/assets/node_modules/...` URLs, so
+    both are rewritten after the move. Rewriting a bundle changes its bytes while
+    leaving its content-hashed name untouched, and `_headers` marks those names
+    `immutable` for a year — so a renamed bundle is re-hashed and its `<script>`
+    reference updated, otherwise returning clients would keep the stale file.
+    """
+    old = root / "assets" / "node_modules"
+    if not old.is_dir():
+        return 0
+    new = root / "assets" / "vendor"
+    if new.exists():
+        shutil.rmtree(new)
+    old.rename(new)
+    moved = sum(1 for p in new.rglob("*") if p.is_file())
+
+    needle = f"/assets/{old.name}/"
+    replacement = f"/assets/{new.name}/"
+    renamed: dict[str, str] = {}
+    for path in [root / "index.html", *root.rglob("*.js")]:
+        if not path.is_file():
+            continue
+        text = path.read_text()
+        if needle not in text:
+            continue
+        path.write_text(text.replace(needle, replacement))
+        if path.suffix == ".js":
+            renamed[path.name] = rehash(path)
+
+    if renamed:
+        index = root / "index.html"
+        html = index.read_text()
+        for before, after in renamed.items():
+            html = html.replace(before, after)
+        index.write_text(html)
+    return moved
+
+
+def rehash(path: Path) -> str:
+    """Rename a hashed bundle to match its new contents and return the new name."""
+    match = re.match(r"^(.*-)[0-9a-f]{16,}(\.js)$", path.name)
+    if not match:
+        return path.name
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:32]
+    target = path.with_name(f"{match.group(1)}{digest}{match.group(2)}")
+    path.rename(target)
+    return target.name
 
 
 def collect_precache(root: Path, base: str) -> list[str]:
@@ -260,6 +319,10 @@ def main() -> None:
     root: Path = args.export_dir
     if not (root / "index.html").exists():
         sys.exit(f"no index.html in {root} — run `expo export --platform web` first")
+
+    moved = flatten_node_modules(root)
+    if moved:
+        print(f"==> Moved {moved} assets out of node_modules/ (Cloudflare Pages skips that path)")
 
     app_dir = Path(__file__).resolve().parent.parent
     logo_path = args.logo or (app_dir / "assets" / "logo-mark.png")

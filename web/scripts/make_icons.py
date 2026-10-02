@@ -46,7 +46,7 @@ def main() -> None:
     args = ap.parse_args()
 
     here = Path(__file__).resolve().parent.parent
-    logo_path = args.logo or (here.parent / "app" / "assets" / "logo-mark.png")
+    logo_path = args.logo or (here / "public" / "brand" / "logo-mark.png")
     out_dir = args.out or (here / "public")
 
     if not logo_path.exists():

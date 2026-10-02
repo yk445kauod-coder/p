@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session, User as SbUser } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured, startAutoRefresh } from "../lib/supabase";
@@ -62,6 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [offline, setOffline] = useState(false);
+  // The auth listener's first callback reports "no session" before the stored
+  // guest session has been read back, so it must not be allowed to sign the
+  // reader out. Track guest mode in a ref that the listener can see.
+  const offlineRef = useRef(false);
+  const setOfflineMode = (on: boolean) => {
+    offlineRef.current = on;
+    setOffline(on);
+  };
 
   // Local-only session (guest mode) is kept separately so it never clashes with
   // a real Supabase session.
@@ -74,14 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const v = JSON.parse(raw);
           if (v.local && v.user && !cancelled) {
-            setOffline(true);
+            setOfflineMode(true);
             setUser(v.user);
           }
         }
         if (supabase) {
           const { data } = await supabase.auth.getSession();
           if (!cancelled && data.session?.user) {
-            setOffline(false);
+            setOfflineMode(false);
             setUser(toUser(data.session.user));
           }
         }
@@ -97,9 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = supabase
       ? supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
           if (session?.user) {
-            setOffline(false);
+            setOfflineMode(false);
             setUser(toUser(session.user));
-          } else if (!offline) {
+          } else if (!offlineRef.current) {
             setUser(null);
           }
         }).data.subscription.unsubscribe
@@ -111,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsub();
       stopRefresh();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persistLocal = async (u: User | null) => {
@@ -129,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!supabase) throw new AuthError("cloud_unavailable");
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw new AuthError(errorCode(error));
-        setOffline(false);
+        setOfflineMode(false);
         await AsyncStorage.removeItem(KEY);
       },
       register: async (email, password, displayName) => {
@@ -143,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Some projects require email confirmation; in that case there is no
         // session yet and we surface it so the UI can explain what happens next.
         if (!data.session) throw new AuthError("email_unconfirmed");
-        setOffline(false);
+        setOfflineMode(false);
         await AsyncStorage.removeItem(KEY);
       },
       logout: async () => {
@@ -155,12 +162,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         setUser(null);
-        setOffline(false);
+        setOfflineMode(false);
         await AsyncStorage.removeItem(KEY);
       },
       signInLocal: async () => {
         const local: User = { id: "local", email: "local@device", displayName: "Local reader" };
-        setOffline(true);
+        setOfflineMode(true);
         setUser(local);
         await persistLocal(local);
       },

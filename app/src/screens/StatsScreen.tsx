@@ -12,6 +12,7 @@ import { useI18n } from "../i18n";
 import { findPrimePeriods, BADGES, badgeText } from "../domain/achievements";
 import { daysSince } from "../domain/plan";
 import { AnimatedEmoji } from "../components/motion/AnimatedEmoji";
+import { AnalyticsSection } from "../components/analytics";
 import { openChat } from "../ai/bus";
 
 type Range = "week" | "fortnight" | "month" | "twomonth" | "year";
@@ -168,6 +169,8 @@ export function StatsScreen() {
           <SectionTitle>{t("stats.consistency")}</SectionTitle>
           <Heatmap days={stats.last30} />
         </Card>
+
+        <AnalyticsSection />
 
         {/* Prime periods */}
         <Card style={{ marginTop: 16 }}>

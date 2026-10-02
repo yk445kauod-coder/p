@@ -125,13 +125,24 @@ worker will not register.
   `theme/typography.ts` is for surfaces we do not render ourselves, such as
   React Navigation's tab labels. Fonts load in `theme/useAppFonts.ts`.
 - Web deep links accept `?tab=Home|Library|Stats|Profile` for screenshots.
-- The mascot (`app/src/components/mascot/Mascot.tsx`) is Fahm, a living
-  bookmark drawn in SVG — no sprite assets, so it follows the theme palette and
-  stays crisp at any size. It gazes at the cursor via the pointer bus in
-  `mascot/pointer.ts` (the root view reports mouse/touch without claiming the
-  responder, so nothing underneath stops being pressable), plays discrete
-  direction and reaction states, and is the entry point to the AI chat sheet.
-  Gaze tracking is disabled when there is no fine pointer, and every animation
-  honours `prefers-reduced-motion` / the in-app setting.
+- The Stats screen charts live in `app/src/components/analytics/`. Nivo is
+  DOM-only, so every chart is a `.web.tsx` component paired with a
+  `react-native-svg` fallback that Metro picks for native. `theme.ts` bridges the
+  TraceBook palette into Nivo's theme, and `derive.ts` computes every series from
+  the reader's own sessions and books — there is no mock data, so charts differ
+  per account. Genre labels resolve through `categoryLabel()` so they follow the
+  active language.
+- The mascot (`app/src/components/mascot/Mascot.tsx`) is Fahm, a fox built
+  from the page-mascot sprite sheets (`app/assets/mascots/fox-{directions,reactions}.webp`,
+  two 3x3 atlases of nine gazes and nine expressions, MIT-licensed). It gazes at
+  the cursor via the pointer bus in `mascot/pointer.ts` (the root view reports
+  mouse/touch without claiming the responder, so nothing underneath stops being
+  pressable), plays discrete direction and reaction states, and is the entry
+  point to the AI chat sheet. Gaze tracking is disabled when there is no fine
+  pointer, and every animation honours `prefers-reduced-motion` / the in-app
+  setting. To swap characters, drop another `<name>-{directions,reactions}.webp`
+  pair from https://koboyo.com/page-mascot/mascots/ into `app/assets/mascots/`
+  and update `SHEETS`; `app/scripts/make_brand.py` draws the matching fox mark
+  for the launcher, splash, manifest and favicon.
 - Anything PWA-related (install prompt, theme-color, service worker, push) is
   web-guarded via `Platform.OS === "web"` so native builds are unaffected.

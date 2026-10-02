@@ -13,12 +13,14 @@ import { formatDay, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { TranslationKey } from "@/i18n";
 
-type Range = "week" | "fortnight" | "month";
+type Range = "week" | "fortnight" | "month" | "twomonth" | "year";
 
 const RANGES: { key: Range; days: number; labelKey: TranslationKey }[] = [
   { key: "week", days: 7, labelKey: "stats.week" },
   { key: "fortnight", days: 15, labelKey: "stats.fortnight" },
   { key: "month", days: 30, labelKey: "stats.month" },
+  { key: "twomonth", days: 60, labelKey: "stats.twomonth" },
+  { key: "year", days: 365, labelKey: "stats.year" },
 ];
 
 /** Stats — one chart system, one calendar, badges shown once. */

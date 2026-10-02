@@ -1,0 +1,1 @@
+{"routes":[{"path":"/","title":"TraceBook"},{"path":"/app","title":"Dashboard"},{"path":"/app/library","title":"Library"},{"path":"/app/public-shelf","title":"Public Shelf"},{"path":"/app/notes","title":"Knowledge"},{"path":"/app/coach","title":"Coach"},{"path":"/app/stats","title":"Stats"},{"path":"/app/profile","title":"Profile"},{"path":"/admin","title":"Admin"}]}

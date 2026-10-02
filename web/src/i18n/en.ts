@@ -24,6 +24,8 @@ export const en = {
 
   "nav.home": "Home",
   "nav.library": "Library",
+  "nav.notes": "Knowledge",
+  "nav.coach": "Coach",
   "nav.stats": "Stats",
   "nav.profile": "Profile",
   "nav.openApp": "Open app",

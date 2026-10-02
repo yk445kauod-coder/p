@@ -187,6 +187,7 @@
       transparent 60%
     );
     background-attachment: fixed;
+    background-image: radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.09), transparent 30%), radial-gradient(circle at 90% 10%, hsl(var(--indigo) / 0.06), transparent 28%);
     /* Keep the bottom nav clear of the iOS home indicator. */
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -217,6 +218,22 @@
     @apply rounded-2xl border border-border bg-card;
     box-shadow: var(--shadow-sm);
   }
+  .glass-panel {
+    @apply rounded-2xl border border-border/70 bg-card/75;
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(18px);
+  }
+  .app-shell {
+    background-image: linear-gradient(hsl(var(--border) / 0.18) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.18) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center center;
+  }
+  .graph-stage {
+    background-image: radial-gradient(circle at center, hsl(var(--indigo) / 0.11), transparent 32%), linear-gradient(hsl(var(--border) / 0.24) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.24) 1px, transparent 1px);
+    background-size: auto, 28px 28px, 28px 28px;
+  }
+  .graph-node { animation: graph-float 5s ease-in-out infinite; }
+  @keyframes graph-float { 0%, 100% { transform: translate(-50%, -50%) translateY(0); } 50% { transform: translate(-50%, -50%) translateY(-4px); } }
   .surface-hover {
     @apply transition-all duration-200;
   }

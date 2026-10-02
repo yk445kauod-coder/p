@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Flame, Sparkles } from "lucide-react";
+import { BookOpenCheck, Flame, Sparkles } from "lucide-react";
 import { useData } from "@/store/data";
 import { useI18n } from "@/i18n/provider";
 import { PageHeader, Section, Stat, StatTile } from "@/components/page";
@@ -12,6 +12,8 @@ import { LogSessionDialog } from "@/components/log-session-dialog";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { BADGES, badgeProgress, computePlan, nextBadge, unlockedBadges } from "@/lib/reading";
 import { DAILY_QUOTES } from "@/data/quotes";
+import { Textarea } from "@/components/ui/textarea";
+import { todayKey } from "@/lib/utils";
 
 /**
  * Home — the daily glance.
@@ -22,9 +24,12 @@ import { DAILY_QUOTES } from "@/data/quotes";
  */
 export default function HomePage() {
   const { t, lang } = useI18n();
-  const { stats, books, preferences, ready } = useData();
+  const { stats, books, preferences, dailyEntries, saveDailyEntry, ready } = useData();
   const [logOpen, setLogOpen] = useState(false);
   const [quoteOffset, setQuoteOffset] = useState(0);
+  const [journalDay, setJournalDay] = useState(todayKey());
+  const [journalText, setJournalText] = useState("");
+  const [essence, setEssence] = useState("");
 
   const reading = useMemo(() => books.filter((b) => b.status === "reading"), [books]);
   const primary = reading[0];
@@ -64,6 +69,12 @@ export default function HomePage() {
   }, [lang, quoteOffset]);
 
   const ritual = preferences.ritualDrink;
+  const journal = dailyEntries.find((entry) => entry.day === journalDay);
+  const journalDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    return d.toISOString().slice(0, 10);
+  });
 
   if (!ready) {
     return (
@@ -196,6 +207,24 @@ export default function HomePage() {
         <Card>
           <CardContent className="p-4">
             <ActivityHeatmap days={stats.last30} />
+          </CardContent>
+        </Card>
+      </Section>
+
+      <Section title={lang === "ar" ? "دفتر القراية" : "Reading journal"} accent="indigo" action={<span className="text-xs text-muted-foreground">{lang === "ar" ? "آخر ٧ أيام" : "Last 7 days"}</span>}>
+        <Card className="glass-panel">
+          <CardContent className="p-4">
+            <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto pb-2">
+              {journalDays.map((day) => {
+                const entry = dailyEntries.find((item) => item.day === day);
+                const active = day === journalDay;
+                return <button key={day} type="button" onClick={() => { setJournalDay(day); setJournalText(entry?.summary ?? ""); setEssence(entry?.essence ?? ""); }} className={`min-w-[4.5rem] rounded-xl border p-2 text-start ${active ? "border-indigo bg-indigo-soft" : "border-border bg-muted/30"}`}><span className="block text-[11px] text-muted-foreground">{new Date(`${day}T00:00:00Z`).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB", { weekday: "short", timeZone: "UTC" })}</span><span className="mt-1 block text-sm font-bold">{day.slice(8)}</span><span className="mt-2 block h-1 rounded-full" style={{ background: entry ? "hsl(var(--teal))" : "hsl(var(--border))" }} /></button>;
+              })}
+            </div>
+            <div className="mt-4 flex items-center gap-2"><BookOpenCheck className="h-4 w-4 text-indigo" /><p className="text-sm font-semibold">{lang === "ar" ? "إيه اللي اتعلمته النهارده؟" : "What did you learn today?"}</p></div>
+            <Textarea value={journalText || journal?.summary || ""} onChange={(e) => setJournalText(e.target.value)} placeholder={lang === "ar" ? "ملخص الـ ١٠ صفحات أو الجلسة…" : "A summary of the pages or session…"} className="mt-3 min-h-[86px]" />
+            <Textarea value={essence || journal?.essence || ""} onChange={(e) => setEssence(e.target.value)} placeholder={lang === "ar" ? "العصارة — الفكرة اللي هتفضل معاك من الكتاب" : "The essence — the idea you want to carry from this book"} className="mt-2 min-h-[70px]" />
+            <Button className="mt-3 w-full sm:w-auto" onClick={() => void saveDailyEntry({ day: journalDay, bookId: primary?.id ?? null, summary: journalText || journal?.summary || "", essence: essence || journal?.essence || null })}>{lang === "ar" ? "احفظ ملخص اليوم" : "Save today’s note"}</Button>
           </CardContent>
         </Card>
       </Section>

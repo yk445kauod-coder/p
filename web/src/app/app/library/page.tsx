@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { LibraryBig, Plus, Search } from "lucide-react";
 import { useData } from "@/store/data";
 import { useI18n } from "@/i18n/provider";
 import { PageHeader, EmptyState } from "@/components/page";
@@ -76,6 +76,11 @@ export default function LibraryPage() {
           books.length === 1
             ? t("library.count", { count: books.length })
             : t("library.countPlural", { count: books.length })
+        }
+        right={
+          <Button size="sm" variant="outline" className="rounded-full" asChild>
+            <a href="/app/public-shelf"><LibraryBig className="me-1.5 h-4 w-4" />Public Shelf</a>
+          </Button>
         }
       />
 

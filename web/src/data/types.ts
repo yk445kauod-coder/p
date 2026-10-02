@@ -28,6 +28,8 @@ export interface Book {
   catalogId?: string | null;
   /** Direct link to read it (epub/pdf/html), when one exists. */
   readUrl?: string | null;
+  /** Direct legal download link when the catalogue provides one. */
+  downloadUrl?: string | null;
   /** Cover image, for catalogue books. */
   coverUrl?: string | null;
   /** Free-form tags, used for shelves and filtering. */

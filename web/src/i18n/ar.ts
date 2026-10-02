@@ -28,6 +28,8 @@ export const ar: Record<TranslationKey, string> = {
 
   "nav.home": "الرئيسية",
   "nav.library": "مكتبتي",
+  "nav.notes": "المعرفة",
+  "nav.coach": "فهم",
   "nav.stats": "الإحصائيات",
   "nav.profile": "حسابي",
   "nav.openApp": "افتح التطبيق",

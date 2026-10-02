@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Platform, Pressable, StyleSheet, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Text, TextInput } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
-import { useReducedMotion } from "../theme/useReducedMotion";
+import { useReducedMotion, useFinePointer } from "../theme/useReducedMotion";
+import { focusRing } from "./layout";
 
 const NATIVE = Platform.OS !== "web";
 
@@ -12,29 +14,62 @@ export function Card({
   children,
   style,
   elevated,
+  interactive,
+  onPress,
+  accessibilityLabel,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   elevated?: boolean;
+  /** Adds hover/press feedback and makes the whole card a button. */
+  interactive?: boolean;
+  onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   const theme = useTheme();
+  const c = theme.colors;
+  const fine = useFinePointer();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [press] = useState(() => new Animated.Value(0));
+
+  const shell: StyleProp<ViewStyle> = [
+    styles.card,
+    { backgroundColor: hovered && interactive ? c.surfaceHover : c.surface, borderColor: c.border },
+    elevated ? theme.elevation.lg : theme.elevation.sm,
+    focused && focusRing(c.primary),
+    style,
+  ];
+
+  if (!interactive) {
+    return <View style={shell}>{children}</View>;
+  }
+
+  const scale = press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.985] });
+
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-        elevated ? theme.shadowLg : theme.shadow,
-        style,
-      ]}
-    >
-      {children}
-    </View>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPointerEnter={fine ? () => setHovered(true) : undefined}
+        onPointerLeave={fine ? () => setHovered(false) : undefined}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onPressIn={() => press.setValue(1)}
+        onPressOut={() => press.setValue(0)}
+        style={shell}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
   );
 }
 
 /* ── Button ───────────────────────────────────────────────────────────────── */
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "subtle";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "subtle" | "gradient" | "premium";
 type ButtonSize = "sm" | "md" | "lg";
 
 export function Button({
@@ -61,7 +96,10 @@ export function Button({
   const theme = useTheme();
   const c = theme.colors;
   const reduced = useReducedMotion();
+  const fine = useFinePointer();
   const [press] = useState(() => new Animated.Value(0));
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const palette: Record<ButtonVariant, { bg: string; fg: string; border: string }> = {
     primary: { bg: c.primary, fg: c.onPrimary, border: "transparent" },
@@ -69,16 +107,32 @@ export function Button({
     ghost: { bg: "transparent", fg: c.text, border: c.border },
     subtle: { bg: "transparent", fg: c.primary, border: "transparent" },
     danger: { bg: c.danger, fg: c.onPrimary, border: "transparent" },
+    gradient: { bg: c.violet, fg: "#FFFFFF", border: "transparent" },
+    premium: { bg: c.premium, fg: theme.mode === "dark" ? "#241B00" : "#FFFFFF", border: "transparent" },
   };
   const p = palette[variant];
-  const dims = { sm: { h: 40, px: 14, fs: 13.5 }, md: { h: 50, px: 18, fs: 15.5 }, lg: { h: 56, px: 22, fs: 16.5 } }[size];
+  const dims = { sm: { h: 40, px: 14, fs: 13.5 }, md: { h: 50, px: 18, fs: 15.5 }, lg: { h: 58, px: 24, fs: 17 } }[size];
 
   const animate = (to: number) => {
     if (reduced) return;
     Animated.timing(press, { toValue: to, duration: theme.motion.fast, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE }).start();
   };
 
-  const scale = press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] });
+  const scale = press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.96] });
+  const gradient = variant === "gradient" ? theme.gradient.hero : null;
+
+  const body = (
+    <>
+      {loading ? (
+        <ActivityIndicator color={p.fg} size="small" />
+      ) : (
+        <>
+          {icon}
+          <Text style={{ color: p.fg, fontSize: dims.fs, fontWeight: "800" }}>{label}</Text>
+        </>
+      )}
+    </>
+  );
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { alignSelf: "stretch" }, style]}>
@@ -86,6 +140,10 @@ export function Button({
         onPress={onPress}
         onPressIn={() => animate(1)}
         onPressOut={() => animate(0)}
+        onPointerEnter={fine ? () => setHovered(true) : undefined}
+        onPointerLeave={fine ? () => setHovered(false) : undefined}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         disabled={disabled || loading}
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -98,20 +156,29 @@ export function Button({
           justifyContent: "center",
           flexDirection: "row",
           gap: 8,
-          backgroundColor: p.bg,
+          overflow: "hidden",
+          backgroundColor: gradient ? "transparent" : p.bg,
           borderWidth: variant === "ghost" || variant === "secondary" ? 1 : 0,
           borderColor: p.border,
           opacity: disabled ? 0.45 : 1,
+          // Hover darkens flat buttons; the gradient gets a translucent scrim.
+          ...(hovered && !disabled
+            ? gradient
+              ? { shadowColor: c.violet, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 }
+              : { opacity: 0.92 }
+            : null),
         }}
       >
-        {loading ? (
-          <ActivityIndicator color={p.fg} size="small" />
-        ) : (
-          <>
-            {icon}
-            <Text style={{ color: p.fg, fontSize: dims.fs, fontWeight: "700" }}>{label}</Text>
-          </>
-        )}
+        {gradient ? (
+          <LinearGradient
+            colors={[gradient[0], gradient[1]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, focused && focusRing(c.primary)]}
+          />
+        ) : null}
+        {focused && !gradient ? <View style={[StyleSheet.absoluteFill, focusRing(c.primary)]} /> : null}
+        {body}
       </Pressable>
     </Animated.View>
   );
@@ -200,10 +267,13 @@ export function Badge({
   text,
   tone = "primary",
   emoji,
+  sticker,
 }: {
   text: string;
-  tone?: "primary" | "accent" | "success" | "danger" | "neutral";
+  tone?: "primary" | "accent" | "success" | "danger" | "neutral" | "premium";
   emoji?: string;
+  /** Slightly rotated, hard-shadowed "sticker" look. */
+  sticker?: boolean;
 }) {
   const c = useTheme().colors;
   const map = {
@@ -212,12 +282,66 @@ export function Badge({
     success: { bg: c.successSoft, fg: c.success },
     danger: { bg: c.dangerSoft, fg: c.danger },
     neutral: { bg: c.surfaceAlt, fg: c.textMuted },
+    premium: { bg: c.premiumSoft, fg: c.premium },
   }[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: map.bg }]}>
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: map.bg },
+        sticker && { borderWidth: 1, borderColor: map.fg, transform: [{ rotate: "-2.5deg" }] },
+      ]}
+    >
       {emoji ? <Text style={{ fontSize: 12 }}>{emoji}</Text> : null}
       <Text style={[styles.badgeText, { color: map.fg }]}>{text}</Text>
     </View>
+  );
+}
+
+/* ── Chip ─────────────────────────────────────────────────────────────────── */
+
+/** Selectable pill used for filters, goals and weekday pickers. */
+export function Chip({
+  label,
+  emoji,
+  selected,
+  onPress,
+  tone = "primary",
+  accessibilityLabel,
+}: {
+  label: string;
+  emoji?: string;
+  selected?: boolean;
+  onPress?: () => void;
+  tone?: "primary" | "accent";
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+  const c = theme.colors;
+  const fine = useFinePointer();
+  const [hovered, setHovered] = useState(false);
+  const active = selected ? (tone === "accent" ? c.accent : c.primary) : null;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ selected: Boolean(selected) }}
+      onPointerEnter={fine ? () => setHovered(true) : undefined}
+      onPointerLeave={fine ? () => setHovered(false) : undefined}
+      style={({ pressed }) => [
+        styles.chip,
+        {
+          borderColor: active ?? c.border,
+          backgroundColor: active ? (tone === "accent" ? c.accentSoft : c.primarySoft) : hovered ? c.surfaceHover : "transparent",
+          transform: [{ scale: pressed ? 0.96 : 1 }],
+        },
+      ]}
+    >
+      {emoji ? <Text style={{ fontSize: 15 }}>{emoji}</Text> : null}
+      <Text style={{ color: active ?? c.textMuted, fontSize: 13, fontWeight: "700" }}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -248,6 +372,8 @@ export function SegmentedControl<T extends string>({
 }) {
   const theme = useTheme();
   const c = theme.colors;
+  const fine = useFinePointer();
+  const [hovered, setHovered] = useState<T | null>(null);
   return (
     <View style={[styles.segment, { backgroundColor: c.surfaceAlt, borderRadius: theme.radius.md }, style]}>
       {options.map((o) => {
@@ -258,13 +384,17 @@ export function SegmentedControl<T extends string>({
             onPress={() => onChange(o.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
+            onPointerEnter={fine ? () => setHovered(o.value) : undefined}
+            onPointerLeave={fine ? () => setHovered(null) : undefined}
             style={[
               styles.segmentItem,
               { borderRadius: theme.radius.sm },
-              active && { backgroundColor: c.surface },
+              active
+                ? [{ backgroundColor: c.surface }, theme.elevation.sm]
+                : hovered === o.value && { backgroundColor: c.surfaceHover },
             ]}
           >
-            <Text style={{ color: active ? c.text : c.textMuted, fontWeight: "700", fontSize: 13.5 }}>
+            <Text style={{ color: active ? c.text : c.textMuted, fontWeight: "800", fontSize: 13.5 }}>
               {o.label}
             </Text>
           </Pressable>
@@ -336,20 +466,21 @@ export function StatTile({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, borderWidth: 1, padding: 18 },
-  input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
+  card: { borderRadius: 24, borderWidth: 1.5, padding: 18 },
+  input: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
   inputMultiline: { minHeight: 84, textAlignVertical: "top", paddingTop: 12 },
-  label: { fontSize: 12.5, fontWeight: "600", marginBottom: 6 },
+  label: { fontSize: 12.5, fontWeight: "700", marginBottom: 6 },
   help: { fontSize: 12, marginTop: 5 },
   track: { overflow: "hidden" },
   fill: { height: "100%" },
   badge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { fontSize: 12, fontWeight: "700" },
+  badgeText: { fontSize: 12, fontWeight: "800" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  sectionTitle: { fontSize: 17, fontWeight: "700" },
+  sectionTitle: { fontSize: 19, fontWeight: "800", letterSpacing: -0.3 },
   segment: { flexDirection: "row", padding: 4, gap: 4 },
   segmentItem: { flex: 1, paddingVertical: 9, alignItems: "center" },
   statTile: { flex: 1, alignItems: "center", paddingVertical: 16, paddingHorizontal: 8, gap: 2 },
-  statValue: { fontSize: 22, fontWeight: "800" },
+  statValue: { fontSize: 24, fontWeight: "900" },
   statLabel: { fontSize: 11.5, textAlign: "center" },
 });

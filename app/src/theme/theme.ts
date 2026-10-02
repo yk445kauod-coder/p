@@ -1,9 +1,14 @@
 /**
  * TraceBook design tokens.
  *
- * A warm "paper + ink" palette so light mode reads like a well-printed book and
- * dark mode like a lamp-lit study. Both modes expose the same token names, so
- * screens never branch on theme — they just read tokens.
+ * A high-energy Gen-Z palette: a high-contrast canvas with saturated electric
+ * accents (violet, lime, hot pink, cyan), chunky rounded cards with visible
+ * borders and hard offset "sticker" shadows. Both modes expose the same token
+ * names, so screens never branch on theme - they just read tokens.
+ *
+ * Light reads "morning light on a pixel sketchbook"; dark reads "neon ink on a
+ * chalkboard". The premium/pro pair is deliberately distinct from
+ * primary/accent so the paywall can glow without colliding with action colour.
  */
 
 export type ThemeMode = "light" | "dark";
@@ -36,154 +41,218 @@ export interface Theme {
     gridLine: string;
     overlay: string;
     ring: string;
+    /** Electric violet - brand ramp. */
+    violet: string;
+    violetSoft: string;
+    /** Hot pink - secondary pop. */
+    pink: string;
+    pinkSoft: string;
+    /** Acid lime - success/luminosity. */
+    lime: string;
+    limeSoft: string;
+    /** Electric cyan - info/tech. */
+    cyan: string;
+    cyanSoft: string;
+    /** Solar amber - warning/streak. */
+    amber: string;
+    amberSoft: string;
+    /** Premium gold - the paid tier accent. */
+    premium: string;
+    premiumSoft: string;
   };
   radius: { xs: number; sm: number; md: number; lg: number; xl: number; pill: number };
   space: (n: number) => number;
   type: {
-    display: { fontSize: number; lineHeight: number; fontWeight: "800"; letterSpacing: number };
-    title: { fontSize: number; lineHeight: number; fontWeight: "800"; letterSpacing: number };
-    heading: { fontSize: number; lineHeight: number; fontWeight: "700" };
+    display: { fontSize: number; lineHeight: number; fontWeight: "900"; letterSpacing: number };
+    title: { fontSize: number; lineHeight: number; fontWeight: "900"; letterSpacing: number };
+    heading: { fontSize: number; lineHeight: number; fontWeight: "800" };
     body: { fontSize: number; lineHeight: number };
-    label: { fontSize: number; lineHeight: number; fontWeight: "600" };
+    label: { fontSize: number; lineHeight: number; fontWeight: "700" };
     caption: { fontSize: number; lineHeight: number };
   };
   motion: {
     fast: number;
     base: number;
     slow: number;
-    /** Cubic-bezier control points usable by both RN Animated and CSS. */
     easeOut: [number, number, number, number];
     easeInOut: [number, number, number, number];
     spring: { tension: number; friction: number };
   };
-  shadow: {
-    shadowColor: string;
-    shadowOpacity: number;
-    shadowRadius: number;
-    shadowOffset: { width: number; height: number };
-    elevation: number;
+  elevation: {
+    none: ShadowDef;
+    sm: ShadowDef;
+    md: ShadowDef;
+    lg: ShadowDef;
   };
-  /** Heavier elevation for popovers and sheets. */
-  shadowLg: {
-    shadowColor: string;
-    shadowOpacity: number;
-    shadowRadius: number;
-    shadowOffset: { width: number; height: number };
-    elevation: number;
+  shadowLg: ShadowDef;
+  shadow: ShadowDef;
+  gradient: {
+    hero: readonly [string, string];
+    surface: readonly [string, string];
+    accent: readonly [string, string];
+  };
+  container: { content: number; wide: number };
+  breakpoints: { sm: number; md: number; lg: number };
+  zIndex: { base: number; chrome: number; overlay: number; sheet: number };
+}
+
+export type ShadowDef = {
+  shadowColor: string;
+  shadowOpacity: number;
+  shadowRadius: number;
+  shadowOffset: { width: number; height: number };
+  elevation: number;
+};
+
+const STICKER_LIGHT = "#241F1A";
+const STICKER_DARK = "#000000";
+
+function stickerShadow(color: string, opacity: number, radius: number, dy: number): ShadowDef {
+  return {
+    shadowColor: color,
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    shadowOffset: { width: 0, height: dy },
+    elevation: Math.round(dy * 0.6),
   };
 }
 
 const base = {
-  radius: { xs: 6, sm: 10, md: 16, lg: 22, xl: 28, pill: 999 },
+  radius: { xs: 10, sm: 14, md: 20, lg: 26, xl: 34, pill: 999 },
   space: (n: number) => n * 4,
   type: {
-    display: { fontSize: 34, lineHeight: 40, fontWeight: "800" as const, letterSpacing: -1 },
-    title: { fontSize: 26, lineHeight: 32, fontWeight: "800" as const, letterSpacing: -0.6 },
-    heading: { fontSize: 17, lineHeight: 22, fontWeight: "700" as const },
-    body: { fontSize: 14.5, lineHeight: 21 },
-    label: { fontSize: 13, lineHeight: 18, fontWeight: "600" as const },
-    caption: { fontSize: 11.5, lineHeight: 15 },
+    display: { fontSize: 42, lineHeight: 46, fontWeight: "900" as const, letterSpacing: -1.4 },
+    title: { fontSize: 30, lineHeight: 36, fontWeight: "900" as const, letterSpacing: -0.9 },
+    heading: { fontSize: 19, lineHeight: 26, fontWeight: "800" as const, letterSpacing: -0.2 },
+    body: { fontSize: 15, lineHeight: 23 },
+    label: { fontSize: 13.5, lineHeight: 18, fontWeight: "700" as const },
+    caption: { fontSize: 12, lineHeight: 16 },
   },
   motion: {
-    fast: 140,
-    base: 240,
+    fast: 120,
+    base: 220,
     slow: 420,
     easeOut: [0.16, 1, 0.3, 1] as [number, number, number, number],
     easeInOut: [0.65, 0, 0.35, 1] as [number, number, number, number],
-    spring: { tension: 180, friction: 22 },
+    spring: { tension: 220, friction: 18 },
   },
+  container: { content: 720, wide: 1100 },
+  breakpoints: { sm: 480, md: 768, lg: 1024 },
+  zIndex: { base: 0, chrome: 40, overlay: 60, sheet: 80 },
 };
 
 export const lightTheme: Theme = {
   mode: "light",
   colors: {
-    bg: "#F7F4EE",
+    bg: "#F6F2FF",
     bgElevated: "#FFFFFF",
     surface: "#FFFFFF",
-    surfaceAlt: "#F0EBE1",
-    surfaceHover: "#EAE3D6",
-    border: "#E4DCCC",
-    borderStrong: "#CFC4AE",
-    text: "#241F1A",
-    textMuted: "#6B6155",
-    textFaint: "#A79B8A",
-    primary: "#3F6B57",
-    primarySoft: "#DCEAE1",
+    surfaceAlt: "#F0EBFA",
+    surfaceHover: "#E6DFF6",
+    border: "#E6DFF2",
+    borderStrong: "#C9BDE0",
+    text: "#171122",
+    textMuted: "#5D5470",
+    textFaint: "#9B90AE",
+    primary: "#5B21E6",
+    primarySoft: "#EDE4FF",
     onPrimary: "#FFFFFF",
-    accent: "#C4622D",
-    accentSoft: "#F6E2D5",
-    success: "#3F6B57",
-    successSoft: "#DCEAE1",
-    warning: "#C99A2E",
-    warningSoft: "#F6EDD6",
-    danger: "#B4443B",
-    dangerSoft: "#F6DEDB",
-    streak: "#C4622D",
-    gridLine: "rgba(63,107,87,0.08)",
-    overlay: "rgba(36,31,26,0.42)",
-    ring: "rgba(63,107,87,0.30)",
+    accent: "#E11D9A",
+    accentSoft: "#FFE3F3",
+    success: "#1FA261",
+    successSoft: "#DCF5E6",
+    warning: "#C77C02",
+    warningSoft: "#FFF0D3",
+    danger: "#E0263E",
+    dangerSoft: "#FFE1E5",
+    streak: "#FF7A00",
+    gridLine: "rgba(91,33,230,0.07)",
+    overlay: "rgba(23,17,34,0.44)",
+    ring: "rgba(91,33,230,0.35)",
+    violet: "#5B21E6",
+    violetSoft: "#EDE4FF",
+    pink: "#E11D9A",
+    pinkSoft: "#FFE3F3",
+    lime: "#2ECF5F",
+    limeSoft: "#DFF9E8",
+    cyan: "#0EA5E6",
+    cyanSoft: "#DFF4FE",
+    amber: "#F59E0B",
+    amberSoft: "#FFF4D6",
+    premium: "#B8860B",
+    premiumSoft: "#FBF0D9",
   },
   ...base,
-  shadow: {
-    shadowColor: "#241F1A",
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+  gradient: {
+    hero: ["#7C3AED", "#E11D9A"] as const,
+    surface: ["#FFFFFF", "#F0EBFF"] as const,
+    accent: ["#0EA5E6", "#2ECF5F"] as const,
   },
-  shadowLg: {
-    shadowColor: "#241F1A",
-    shadowOpacity: 0.16,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 10,
+  elevation: {
+    none: stickerShadow(STICKER_LIGHT, 0, 0, 0),
+    sm: stickerShadow(STICKER_LIGHT, 0.08, 6, 2),
+    md: stickerShadow(STICKER_LIGHT, 0.14, 10, 4),
+    lg: stickerShadow(STICKER_LIGHT, 0.2, 16, 7),
   },
+  shadowLg: stickerShadow(STICKER_LIGHT, 0.22, 20, 10),
+  shadow: stickerShadow(STICKER_LIGHT, 0.12, 12, 5),
 };
 
 export const darkTheme: Theme = {
   mode: "dark",
   colors: {
-    bg: "#14110E",
-    bgElevated: "#1D1915",
-    surface: "#1D1915",
-    surfaceAlt: "#26201A",
-    surfaceHover: "#2E261E",
-    border: "#332B23",
-    borderStrong: "#4A3F33",
-    text: "#F4EFE7",
-    textMuted: "#B3A896",
-    textFaint: "#6E6355",
-    primary: "#7FBFA0",
-    primarySoft: "#233830",
-    onPrimary: "#0F1A15",
-    accent: "#E8A87C",
-    accentSoft: "#3A2A20",
-    success: "#7FBFA0",
-    successSoft: "#233830",
-    warning: "#E5C066",
-    warningSoft: "#3A3220",
-    danger: "#E08B80",
-    dangerSoft: "#3A2320",
-    streak: "#E8A87C",
-    gridLine: "rgba(127,191,160,0.07)",
-    overlay: "rgba(0,0,0,0.55)",
-    ring: "rgba(127,191,160,0.32)",
+    bg: "#0C0913",
+    bgElevated: "#17121F",
+    surface: "#17121F",
+    surfaceAlt: "#221B2E",
+    surfaceHover: "#2C2339",
+    border: "#2E263B",
+    borderStrong: "#463A58",
+    text: "#F6F1FF",
+    textMuted: "#B9AECB",
+    textFaint: "#6F6482",
+    primary: "#B18CFF",
+    primarySoft: "#2E2148",
+    onPrimary: "#120829",
+    accent: "#FF6FD8",
+    accentSoft: "#3E1A35",
+    success: "#56E39B",
+    successSoft: "#123324",
+    warning: "#FFD166",
+    warningSoft: "#3A2F0F",
+    danger: "#FF7A8A",
+    dangerSoft: "#401A20",
+    streak: "#FF8A3D",
+    gridLine: "rgba(177,140,255,0.07)",
+    overlay: "rgba(0,0,0,0.6)",
+    ring: "rgba(177,140,255,0.35)",
+    violet: "#B18CFF",
+    violetSoft: "#2E2148",
+    pink: "#FF6FD8",
+    pinkSoft: "#3E1A35",
+    lime: "#56E39B",
+    limeSoft: "#123324",
+    cyan: "#4CC9FF",
+    cyanSoft: "#0E2B41",
+    amber: "#FFD166",
+    amberSoft: "#3A2F0F",
+    premium: "#FFD166",
+    premiumSoft: "#3A2F0F",
   },
   ...base,
-  shadow: {
-    shadowColor: "#000000",
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+  gradient: {
+    hero: ["#7C3AED", "#E11D9A"] as const,
+    surface: ["#17121F", "#241A3A"] as const,
+    accent: ["#4CC9FF", "#56E39B"] as const,
   },
-  shadowLg: {
-    shadowColor: "#000000",
-    shadowOpacity: 0.55,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 14,
+  elevation: {
+    none: stickerShadow(STICKER_DARK, 0, 0, 0),
+    sm: stickerShadow(STICKER_DARK, 0.35, 4, 2),
+    md: stickerShadow(STICKER_DARK, 0.45, 8, 4),
+    lg: stickerShadow(STICKER_DARK, 0.55, 14, 7),
   },
+  shadowLg: stickerShadow(STICKER_DARK, 0.6, 18, 10),
+  shadow: stickerShadow(STICKER_DARK, 0.5, 12, 5),
 };
 
 export const themes: Record<ThemeMode, Theme> = { light: lightTheme, dark: darkTheme };

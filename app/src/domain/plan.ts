@@ -102,7 +102,10 @@ export function journeyStart(dates: string[]): string | null {
 export function daysSince(startKey: string, today = new Date()): number {
   const start = new Date(`${startKey}T00:00:00Z`).getTime();
   const end = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  return Math.max(0, Math.floor((end - start) / 86_400_000)) + 1;
+  // A future start date means the journey has not begun yet: report 0 days
+  // rather than a negative count.
+  if (end < start) return 0;
+  return Math.floor((end - start) / 86_400_000) + 1;
 }
 
 /**

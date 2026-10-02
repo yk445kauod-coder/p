@@ -41,6 +41,8 @@ export interface Profile {
   notify_reminder: boolean;
   /** Local `HH:MM` the daily reminder fires. */
   notify_reminder_time: string;
+  /** Subscription tier: `free` (default) or `pro`. */
+  plan: string;
 }
 
 export interface Book {

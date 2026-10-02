@@ -8,7 +8,9 @@ import { useSettings } from "../store/settings";
 import { Logo } from "./Logo";
 import { useI18n } from "../i18n";
 import { useAuth } from "../store/auth";
+import { useEntitlements } from "../store/entitlements";
 import { askAgent, streamAgent, AgentError, type AgentToolCall, type ChatTurn } from "../api/agent";
+import { openPaywall } from "../ai/bus";
 import { useToast } from "./motion/Toast";
 import { useConfetti } from "./motion/Confetti";
 import { AnimatedEmoji } from "./motion/AnimatedEmoji";
@@ -70,6 +72,7 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
   const { t, lang } = useI18n();
   const toast = useToast();
   const confetti = useConfetti();
+  const { canSendAI, aiMessagesLeft, isPro, recordAIMessage } = useEntitlements();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -106,6 +109,13 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
       const content = text.trim();
       if (!content || busy) return;
 
+      // Free readers get a daily coach allowance; hitting it opens the paywall
+      // instead of failing silently.
+      if (!offline && !canSendAI) {
+        openPaywall();
+        return;
+      }
+
       const userMsg: Message = { id: `${Date.now()}u`, role: "user", content };
       const assistantId = `${Date.now()}a`;
       const history: ChatTurn[] = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
@@ -118,6 +128,7 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
       setInput("");
       setBusy(true);
       setError(null);
+      recordAIMessage();
 
       const patch = (fn: (m: Message) => Message) =>
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? fn(m) : m)));
@@ -170,7 +181,7 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
         setBusy(false);
       }
     },
-    [allowActions, buildContext, busy, confetti, messages, offline, sync, t, toast],
+    [allowActions, buildContext, busy, canSendAI, confetti, messages, offline, recordAIMessage, sync, t, toast],
   );
 
   // A seed prompt (e.g. from Stats) is sent once when the sheet opens.
@@ -306,6 +317,21 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
 
           {error ? <Text style={[styles.error, { color: c.danger }]}>{error}</Text> : null}
 
+          {/* Free readers see how much coach time is left; Pro sees nothing. */}
+          {!offline && !isPro ? (
+            canSendAI ? (
+              <Text style={[styles.quota, { color: c.textFaint }]}>
+                {t("ai.quotaLeft", { count: aiMessagesLeft })}
+              </Text>
+            ) : (
+              <Pressable onPress={openPaywall} accessibilityRole="button" style={styles.quotaCta}>
+                <Text style={{ color: c.premium, fontSize: 12.5, fontWeight: "800" }}>
+                  {t("ai.quotaOut")}
+                </Text>
+              </Pressable>
+            )
+          ) : null}
+
           <View style={[styles.inputRow, { borderColor: c.border, backgroundColor: c.surface }]}>
             <TextInput
               ref={inputRef}
@@ -366,6 +392,8 @@ const styles = StyleSheet.create({
   toolRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   toolText: { flex: 1, fontSize: 13 },
   error: { fontSize: 13, paddingVertical: 6 },
+  quota: { fontSize: 11.5, paddingTop: 8, textAlign: "center" },
+  quotaCta: { paddingTop: 8, paddingBottom: 2, alignItems: "center" },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, borderWidth: 1, borderRadius: 22, paddingLeft: 16, paddingRight: 6, paddingVertical: 6, marginTop: 6 },
   input: { flex: 1, fontSize: 15, maxHeight: 110, paddingVertical: 8 },
   send: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },

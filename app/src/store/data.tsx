@@ -37,8 +37,6 @@ export interface Stats {
   avgMinutes: number;
   /** First day with any activity — the start of the journey. */
   startDate: string | null;
-  /** Consecutive reading days including planned rest and review days. */
-  primeDays: number;
 }
 
 interface DataValue {
@@ -122,7 +120,7 @@ const EMPTY: Cache = {
   lastSync: null,
 };
 
-function computeStats(
+export function computeStats(
   sessions: ReadingSession[],
   books: Book[],
   restDays: number[],
@@ -156,10 +154,6 @@ function computeStats(
   const activeDaysCount = [...byDay.values()].filter((v) => v.minutes > 0).length;
   const todayStat = byDay.get(today) ?? { minutes: 0, pages: 0 };
 
-  // Planned days off are excluded from "missed", but they still extend a prime
-  // run — showing up around them is the point of scheduling them.
-  const primeDays = streak.current;
-
   return {
     totalMinutes,
     totalPages,
@@ -174,7 +168,6 @@ function computeStats(
     weekMinutes: last30.slice(-7).reduce((a, d) => a + d.minutes, 0),
     avgMinutes: activeDaysCount ? Math.round(totalMinutes / activeDaysCount) : 0,
     startDate: [...byDay.keys()].sort()[0] ?? null,
-    primeDays,
   };
 }
 
@@ -243,6 +236,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<DataValue>(() => {
     const local = (patch: Partial<Cache>) => persist(patch);
 
+    /** Removes an optimistic row after a failed cloud write. */
+    const rollback = <K extends keyof Cache>(key: K, id: string) => {
+      const list = cache[key];
+      if (!Array.isArray(list)) return;
+      local({ [key]: (list as { id: string }[]).filter((r) => r.id !== id) } as unknown as Partial<Cache>);
+    };
+
     return {
       ready,
       syncing,
@@ -284,6 +284,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               return merged;
             });
           } catch (e) {
+            // The row was never persisted: drop the optimistic copy so the UI
+            // never shows a book the server does not have.
+            rollback(target, optimistic.id);
             setError((e as Error).message);
           }
         }
@@ -384,6 +387,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } catch (e) {
+            // Undo both halves of the optimistic write: the session and the
+            // page advance it applied to the book.
+            rollback("sessions", optimistic.id);
+            if (input.book_id) local({ books: cache.books });
             setError((e as Error).message);
           }
         }
@@ -412,6 +419,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               return merged;
             });
           } catch (e) {
+            rollback("goals", optimistic.id);
             setError((e as Error).message);
           }
         }
@@ -446,6 +454,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               return merged;
             });
           } catch (e) {
+            rollback("quotes", optimistic.id);
             setError((e as Error).message);
           }
         }
@@ -478,6 +487,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               return merged;
             });
           } catch (e) {
+            rollback("weeklyReviews", optimistic.id);
             setError((e as Error).message);
           }
         }
@@ -514,6 +524,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               return merged;
             });
           } catch (e) {
+            rollback("dailyEntries", optimistic.id);
             setError((e as Error).message);
           }
         }

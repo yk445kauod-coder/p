@@ -10,6 +10,7 @@ import { fontFor } from "./theme/typography";
 import { SettingsProvider, useSettings } from "./store/settings";
 import { AuthProvider, useAuth } from "./store/auth";
 import { DataProvider } from "./store/data";
+import { EntitlementsProvider } from "./store/entitlements";
 import { NotificationsProvider } from "./store/notifications";
 import { I18nProvider, useI18n } from "./i18n";
 import { ToastProvider } from "./components/motion/Toast";
@@ -135,7 +136,9 @@ export default function App() {
                 <AuthProvider>
                   <NotificationsProvider>
                     <DataProvider>
-                      <Navigation />
+                      <EntitlementsProvider>
+                        <Navigation />
+                      </EntitlementsProvider>
                     </DataProvider>
                   </NotificationsProvider>
                 </AuthProvider>

@@ -49,3 +49,6 @@ supabase/.temp/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# agent scratch space
+.agents_tmp/

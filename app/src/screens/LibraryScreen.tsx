@@ -6,10 +6,13 @@ import { useTheme } from "../theme/ThemeProvider";
 import { useData, type Book, type BookStatus } from "../store/data";
 import { useI18n, type TranslationKey } from "../i18n";
 import { Card, ProgressBar, Badge } from "../components/ui";
-import { GridBackground } from "../components/visuals";
+import { GradientMesh } from "../components/visuals";
 import { AddBookSheet } from "../components/AddBookSheet";
 import { BookDetailSheet } from "../components/BookDetailSheet";
 import { categoryLabel } from "../domain/achievements";
+import { useResponsive } from "../components/layout";
+import { useEntitlements } from "../store/entitlements";
+import { openPaywall } from "../ai/bus";
 
 const FILTERS: { key: BookStatus | "all"; labelKey: TranslationKey }[] = [
   { key: "all", labelKey: "library.filter.all" },
@@ -32,6 +35,8 @@ export function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const { books, futureBooks } = useData();
   const { t, lang } = useI18n();
+  const { wide, gutter } = useResponsive();
+  const { maxActiveBooks, isPro } = useEntitlements();
   const [filter, setFilter] = useState<BookStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -47,67 +52,105 @@ export function LibraryScreen() {
       .filter((b) => (q ? b.title.toLowerCase().includes(q) || (b.author ?? "").toLowerCase().includes(q) : true));
   }, [filter, query, showNext, source]);
 
+  // Free readers cap the active shelf; the add button routes to the paywall.
+  const activeCount = books.filter((b) => b.status === "reading").length;
+  const atBookLimit = !isPro && activeCount >= maxActiveBooks;
+
+  const tryAdd = () => {
+    if (atBookLimit) {
+      openPaywall();
+      return;
+    }
+    setAddOpen(true);
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <GridBackground />
-      <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-        <Text style={[styles.title, { color: c.text }]}>{t("library.title")}</Text>
-        <Text style={[styles.subtitle, { color: c.textMuted }]}>
-          {books.length === 1 ? t("library.count", { count: books.length }) : t("library.countPlural", { count: books.length })}
-        </Text>
+    <View style={{ flex: 1 }}>
+      <GradientMesh />
+      <View style={[styles.header, { paddingTop: insets.top + 14, paddingHorizontal: gutter }]}>
+        <View style={{ width: "100%", maxWidth: theme.container.content, alignSelf: "center" }}>
+          <Text style={[styles.title, { color: c.text }]}>{t("library.title")}</Text>
+          <Text style={[styles.subtitle, { color: c.textMuted }]}>
+            {books.length === 1 ? t("library.count", { count: books.length }) : t("library.countPlural", { count: books.length })}
+          </Text>
 
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("library.search")}
-          placeholderTextColor={c.textFaint}
-          style={[styles.search, { color: c.text, borderColor: c.border, backgroundColor: c.surface }]}
-        />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t("library.search")}
+            placeholderTextColor={c.textFaint}
+            style={[styles.search, { color: c.text, borderColor: c.border, backgroundColor: c.surface }]}
+          />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          <Pressable
-            onPress={() => {
-              setShowNext((v) => !v);
-              setFilter("all");
-            }}
-            style={[
-              styles.filterChip,
-              { borderColor: showNext ? c.accent : c.border, backgroundColor: showNext ? c.accentSoft : "transparent" },
-            ]}
-          >
-            <Text style={{ color: showNext ? c.accent : c.textMuted, fontSize: 13, fontWeight: "600" }}>
-              📋 {t("addBook.shelfNext")} ({futureBooks.length})
-            </Text>
-          </Pressable>
-          {!showNext &&
-            FILTERS.map((f) => {
-              const active = filter === f.key;
-              return (
-                <Pressable
-                  key={f.key}
-                  onPress={() => setFilter(f.key)}
-                  style={[
-                    styles.filterChip,
-                    { borderColor: active ? c.primary : c.border, backgroundColor: active ? c.primarySoft : "transparent" },
-                  ]}
-                >
-                  <Text style={{ color: active ? c.primary : c.textMuted, fontSize: 13, fontWeight: "600" }}>
-                    {t(f.labelKey)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-        </ScrollView>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            <Pressable
+              onPress={() => {
+                setShowNext((v) => !v);
+                setFilter("all");
+              }}
+              style={[
+                styles.filterChip,
+                { borderColor: showNext ? c.accent : c.border, backgroundColor: showNext ? c.accentSoft : "transparent" },
+              ]}
+            >
+              <Text style={{ color: showNext ? c.accent : c.textMuted, fontSize: 13, fontWeight: "700" }}>
+                📋 {t("addBook.shelfNext")} ({futureBooks.length})
+              </Text>
+            </Pressable>
+            {!showNext &&
+              FILTERS.map((f) => {
+                const active = filter === f.key;
+                return (
+                  <Pressable
+                    key={f.key}
+                    onPress={() => setFilter(f.key)}
+                    style={[
+                      styles.filterChip,
+                      { borderColor: active ? c.primary : c.border, backgroundColor: active ? c.primarySoft : "transparent" },
+                    ]}
+                  >
+                    <Text style={{ color: active ? c.primary : c.textMuted, fontSize: 13, fontWeight: "700" }}>
+                      {t(f.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+          </ScrollView>
+
+          {atBookLimit ? (
+            <Pressable onPress={openPaywall} accessibilityRole="button" style={{ marginBottom: 10 }}>
+              <Card style={{ flexDirection: "row", alignItems: "center", gap: 10, borderColor: c.premium, paddingVertical: 12 }}>
+                <Text style={{ fontSize: 16 }}>✨</Text>
+                <Text style={{ flex: 1, color: c.text, fontSize: 12.5, fontWeight: "700" }}>
+                  {t("paywall.gateBooks", { count: maxActiveBooks })}
+                </Text>
+                <Text style={{ color: c.premium, fontSize: 12.5, fontWeight: "800" }}>{t("paywall.pro")} ›</Text>
+              </Card>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <FlatList
         data={filtered}
         keyExtractor={(b) => b.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 150, gap: 12 }}
+        // Two columns once there is room; a single list on phones.
+        key={wide ? "grid" : "list"}
+        numColumns={wide ? 2 : 1}
+        columnWrapperStyle={wide ? { gap: 14 } : undefined}
+        contentContainerStyle={{
+          paddingHorizontal: gutter,
+          paddingBottom: 150,
+          gap: 14,
+          width: "100%",
+          maxWidth: theme.container.content,
+          alignSelf: "center",
+        }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <Card>
-            <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21 }}>
+          <Card style={{ alignItems: "center", gap: 10, paddingVertical: 26 }}>
+            <Text style={{ fontSize: 30 }}>🔍</Text>
+            <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, textAlign: "center" }}>
               {showNext ? t("library.emptyNext") : t("library.empty")}
             </Text>
           </Card>
@@ -116,8 +159,8 @@ export function LibraryScreen() {
           const pct = item.total_pages ? item.current_page / item.total_pages : 0;
           const cat = categoryLabel(item.category, lang);
           return (
-            <Pressable onPress={() => setSelected(item)} accessibilityRole="button">
-              <Card>
+            <View style={{ flex: wide ? 1 : undefined }}>
+              <Card interactive onPress={() => setSelected(item)} accessibilityLabel={item.title}>
                 <View style={styles.bookRow}>
                   <View style={[styles.cover, { backgroundColor: item.cover_color ?? c.primary }]}>
                     <Text style={styles.coverInitial}>{item.title.slice(0, 1).toUpperCase()}</Text>
@@ -140,23 +183,27 @@ export function LibraryScreen() {
                   </View>
                 </View>
               </Card>
-            </Pressable>
+            </View>
           );
         }}
       />
 
       <Pressable
-        onPress={() => setAddOpen(true)}
+        onPress={tryAdd}
         style={({ pressed }) => [
           styles.fab,
-          { backgroundColor: c.primary, bottom: insets.bottom + 92, opacity: pressed ? 0.9 : 1 },
-          theme.shadowLg,
+          { backgroundColor: atBookLimit ? c.premium : c.primary, bottom: insets.bottom + 92, opacity: pressed ? 0.9 : 1 },
+          theme.elevation.lg,
         ]}
         accessibilityRole="button"
         accessibilityLabel={t("library.addBook")}
       >
-        <Text style={{ color: c.onPrimary, fontSize: 22, fontWeight: "700", marginTop: -2 }}>+</Text>
-        <Text style={{ color: c.onPrimary, fontSize: 15, fontWeight: "700" }}>{t("library.addBook")}</Text>
+        <Text style={{ color: atBookLimit ? "#241B00" : c.onPrimary, fontSize: 22, fontWeight: "800", marginTop: -2 }}>
+          {atBookLimit ? "✨" : "+"}
+        </Text>
+        <Text style={{ color: atBookLimit ? "#241B00" : c.onPrimary, fontSize: 15, fontWeight: "800" }}>
+          {atBookLimit ? t("paywall.pro") : t("library.addBook")}
+        </Text>
       </Pressable>
 
       <AddBookSheet visible={addOpen} onClose={() => setAddOpen(false)} />
@@ -166,17 +213,17 @@ export function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, gap: 4 },
-  title: { fontSize: 26, fontWeight: "800", letterSpacing: -0.6 },
+  header: { gap: 4 },
+  title: { fontSize: 30, fontWeight: "900", letterSpacing: -1 },
   subtitle: { fontSize: 13 },
-  search: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, marginTop: 12, fontSize: 15 },
+  search: { borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 11, marginTop: 12, fontSize: 15 },
   filters: { gap: 8, paddingVertical: 12 },
-  filterChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
+  filterChip: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
   bookRow: { flexDirection: "row", gap: 14, alignItems: "center" },
-  cover: { width: 52, height: 68, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  coverInitial: { color: "#fff", fontSize: 24, fontWeight: "800" },
+  cover: { width: 52, height: 68, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  coverInitial: { color: "#fff", fontSize: 24, fontWeight: "900" },
   bookTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  bookTitle: { fontSize: 16, fontWeight: "700", flex: 1 },
+  bookTitle: { fontSize: 16, fontWeight: "800", flex: 1 },
   bookAuthor: { fontSize: 12.5, marginTop: 2 },
   progressRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
   progressText: { fontSize: 11.5, minWidth: 38, textAlign: "right" },

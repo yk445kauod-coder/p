@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "../components/Text";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useAuth, AuthError } from "../store/auth";
 import { Button, Card } from "../components/ui";
 import { Logo } from "../components/Logo";
-import { GridBackground, AuroraBackdrop, ReadingConstellation } from "../components/visuals";
+import { GradientMesh, ReadingConstellation } from "../components/visuals";
+import { Screen } from "../components/layout";
 import { useI18n } from "../i18n";
 import { Lottie } from "../components/motion/Lottie";
 import { useConfetti } from "../components/motion/Confetti";
@@ -29,7 +29,6 @@ function passwordScore(pw: string): number {
 export function AuthScreen() {
   const theme = useTheme();
   const c = theme.colors;
-  const insets = useSafeAreaInsets();
   const { login, register, signInLocal } = useAuth();
   const { t } = useI18n();
   const confetti = useConfetti();
@@ -87,7 +86,7 @@ export function AuthScreen() {
   if (success) {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
-        <GridBackground />
+        <GradientMesh />
         <Lottie source={require("../../assets/lottie/success.json")} size={180} />
         <Text style={[styles.successTitle, { color: c.text }]}>{t("auth.success")}</Text>
         <Text style={{ color: c.textMuted, fontSize: 14 }}>{t("auth.successBody")}</Text>
@@ -96,15 +95,10 @@ export function AuthScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <GridBackground />
-      <AuroraBackdrop />
+    <View style={{ flex: 1 }}>
+      <GradientMesh />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{ paddingTop: insets.top + 36, paddingBottom: 40, paddingHorizontal: 24 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <Screen topExtra={36} bottomInset={40}>
           <View style={styles.hero}>
             <Logo size={88} animated />
             <Text style={[styles.brand, { color: c.text }]}>TraceBook</Text>
@@ -114,7 +108,7 @@ export function AuthScreen() {
           </View>
 
           <View style={styles.constellation}>
-            <ReadingConstellation size={120} />
+            <ReadingConstellation size={110} />
           </View>
 
           <Card style={{ marginTop: 18 }} elevated>
@@ -130,7 +124,7 @@ export function AuthScreen() {
                   accessibilityState={{ selected: mode === m }}
                   style={[styles.segmentItem, mode === m && { backgroundColor: c.surface }]}
                 >
-                  <Text style={{ color: mode === m ? c.text : c.textMuted, fontWeight: "700", fontSize: 14 }}>
+                  <Text style={{ color: mode === m ? c.text : c.textMuted, fontWeight: "800", fontSize: 14 }}>
                     {m === "register" ? t("auth.createAccount") : t("auth.signIn")}
                   </Text>
                 </Pressable>
@@ -259,7 +253,7 @@ export function AuthScreen() {
               />
             )}
           </Card>
-        </ScrollView>
+        </Screen>
       </KeyboardAvoidingView>
     </View>
   );
@@ -267,15 +261,15 @@ export function AuthScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
-  successTitle: { fontSize: 24, fontWeight: "800", marginTop: 8 },
+  successTitle: { fontSize: 24, fontWeight: "900", marginTop: 8 },
   hero: { alignItems: "center", gap: 8 },
-  brand: { fontSize: 34, fontWeight: "900", letterSpacing: -1 },
+  brand: { fontSize: 40, fontWeight: "900", letterSpacing: -1.6 },
   tagline: { fontSize: 14.5, textAlign: "center", maxWidth: 300 },
   constellation: { alignItems: "center", marginTop: 16 },
-  segment: { flexDirection: "row", borderRadius: 14, padding: 4, gap: 4, marginBottom: 10 },
-  segmentItem: { flex: 1, paddingVertical: 9, borderRadius: 11, alignItems: "center" },
-  label: { fontSize: 12.5, fontWeight: "600", marginTop: 12, marginBottom: 6 },
-  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
+  segment: { flexDirection: "row", borderRadius: 16, padding: 4, gap: 4, marginBottom: 10 },
+  segmentItem: { flex: 1, paddingVertical: 9, borderRadius: 13, alignItems: "center" },
+  label: { fontSize: 12.5, fontWeight: "700", marginTop: 12, marginBottom: 6 },
+  input: { borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
   passwordRow: { position: "relative", justifyContent: "center" },
   passwordInput: { paddingRight: 46 },
   eye: { position: "absolute", right: 12, padding: 6 },
@@ -283,7 +277,7 @@ const styles = StyleSheet.create({
   strengthRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 },
   strengthBars: { flexDirection: "row", gap: 4, flex: 1 },
   strengthBar: { flex: 1, height: 5, borderRadius: 999 },
-  errorBox: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
+  errorBox: { borderWidth: 1.5, borderRadius: 14, padding: 12, marginTop: 12 },
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 14 },
   divider: { flex: 1, height: StyleSheet.hairlineWidth },
   guestHint: { fontSize: 11.5, textAlign: "center", marginTop: 8 },

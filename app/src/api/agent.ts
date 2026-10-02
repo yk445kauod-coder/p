@@ -56,10 +56,26 @@ export interface AgentRequest {
   allowActions?: boolean;
 }
 
+/**
+ * The edge function can be evicted between visits; the first request after an
+ * idle period occasionally dies with a platform-level 5xx before the handler
+ * runs. Retrying once turns that into a normal warm response.
+ */
+async function fetchWithRetry(url: string, init: RequestInit, attempts = 2): Promise<Response> {
+  let last: Response | null = null;
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(url, init);
+    if (res.status < 500) return res;
+    last = res;
+    await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+  }
+  return last as Response;
+}
+
 /** One-shot request used when streaming is unavailable. */
 export async function askAgent(req: AgentRequest): Promise<AgentReply> {
   const token = await accessToken();
-  const res = await fetch(endpoint(), {
+  const res = await fetchWithRetry(endpoint(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +115,7 @@ export async function streamAgent(
   },
 ): Promise<AgentReply> {
   const token = await accessToken();
-  const res = await fetch(endpoint(), {
+  const res = await fetchWithRetry(endpoint(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

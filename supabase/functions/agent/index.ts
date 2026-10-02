@@ -19,10 +19,13 @@ const PROVIDER_KEY =
   Deno.env.get("OPENAI_API_KEY") ??
   "";
 
+// Free-tier models first so the coach keeps working when the account has no
+// paid credits; the paid ids are a last resort for better quality.
 const MODELS = [
   Deno.env.get("AI_MODEL"),
+  "nvidia/nemotron-3.5-lightning:free",
+  "inclusionai/ling-3.0-flash-sante:free",
   "openai/gpt-4o-mini",
-  "openai/gpt-4o",
 ].filter(Boolean) as string[];
 
 const MAX_STEPS = 4;

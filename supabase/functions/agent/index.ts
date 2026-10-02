@@ -11,18 +11,18 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const BASE_URL = Deno.env.get("AI_BASE_URL") ?? "https://openrouter.ai/api/v1";
+
 const PROVIDER_KEY =
-  Deno.env.get("OPENROUTER_API_KEY") ??
   Deno.env.get("AI_API_KEY") ??
+  Deno.env.get("OPENROUTER_API_KEY") ??
   Deno.env.get("OPENAI_API_KEY") ??
   "";
-
-const BASE_URL = Deno.env.get("AI_BASE_URL") ?? "https://openrouter.ai/api/v1";
 
 const MODELS = [
   Deno.env.get("AI_MODEL"),
   "openai/gpt-4o-mini",
-  "anthropic/claude-3.5-haiku",
+  "openai/gpt-4o",
 ].filter(Boolean) as string[];
 
 const MAX_STEPS = 4;

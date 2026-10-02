@@ -45,6 +45,8 @@ const en = {
   "auth.errWeak": "Use at least 8 characters.",
   "auth.errEmail": "Enter a valid email address.",
   "auth.errNetwork": "Couldn't reach the server. You can continue offline instead.",
+  "auth.errRateLimited": "Too many sign-up emails sent. Wait a minute, then try again.",
+  "auth.errUnknown": "Something went wrong. Please try again.",
 
   "home.greetingMorning": "Good morning",
   "home.greetingAfternoon": "Good afternoon",
@@ -366,6 +368,8 @@ const ar: Record<keyof typeof en, string> = {
   "auth.errWeak": "خلّي الباسورد ٨ حروف على الأقل.",
   "auth.errEmail": "اكتب إيميل صحيح.",
   "auth.errNetwork": "مش قادر أوصل للسيرفر. تقدر تكمّل أوفلاين.",
+  "auth.errRateLimited": "بعتنالك إيميلات كتير. استنّى دقيقة وجرّب تاني.",
+  "auth.errUnknown": "حصلت مشكلة. جرّب تاني.",
 
   "home.greetingMorning": "صباح الخير",
   "home.greetingAfternoon": "نهارك سعيد",

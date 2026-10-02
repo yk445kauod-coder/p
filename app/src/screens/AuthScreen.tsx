@@ -72,11 +72,12 @@ export function AuthScreen() {
         weak_password: t("auth.errWeak"),
         invalid_email: t("auth.errEmail"),
         email_unconfirmed: t("auth.confirmEmail"),
-        rate_limited: t("auth.errNetwork"),
+        rate_limited: t("auth.errRateLimited"),
         cloud_unavailable: t("auth.errNetwork"),
         network: t("auth.errNetwork"),
+        unknown: t("auth.errUnknown"),
       };
-      setError(map[code] ?? t("auth.errNetwork"));
+      setError(map[code] ?? t("auth.errUnknown"));
     } finally {
       setBusy(false);
     }

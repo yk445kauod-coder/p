@@ -31,10 +31,12 @@ function errorCode(err: unknown): string {
   if (raw.includes("already registered") || raw.includes("already exists")) return "email_taken";
   if (raw.includes("invalid login")) return "invalid_credentials";
   if (raw.includes("email not confirmed")) return "email_unconfirmed";
-  if (raw.includes("rate limit") || raw.includes("too many")) return "rate_limited";
+  if (raw.includes("rate limit") || raw.includes("too many") || raw.includes("over_email_send")) {
+    return "rate_limited";
+  }
   if (raw.includes("password")) return "weak_password";
   if (raw.includes("email")) return "invalid_email";
-  if (raw.includes("network") || raw.includes("fetch")) return "network";
+  if (raw.includes("network") || raw.includes("fetch") || raw.includes("failed to fetch")) return "network";
   return "unknown";
 }
 

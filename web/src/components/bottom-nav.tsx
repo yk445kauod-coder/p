@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, BookOpen, Home, User } from "lucide-react";
+import { Wordmark } from "@/components/book-mark";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n";
@@ -62,9 +63,8 @@ export function BottomNav() {
 
       {/* Desktop: left rail. */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border/60 bg-card/40 px-3 py-6 md:flex">
-        <Link href="/app" className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold tracking-tight">
-          <BookOpen className="h-5 w-5 text-primary" aria-hidden />
-          {t("app.name")}
+        <Link href="/app" className="mb-8 flex items-center px-2">
+          <Wordmark size={26} labelClassName="text-lg" />
         </Link>
         <ul className="flex flex-col gap-1">
           {TABS.map(({ href, key, Icon, active }) => {

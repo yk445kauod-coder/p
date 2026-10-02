@@ -3,8 +3,12 @@ import Dexie, { type Table } from "dexie";
 import { v4 as uuidv4 } from "uuid";
 import type {
   Book,
+  CatalogBook,
+  Collection,
   DailyEntry,
   Goal,
+  Highlight,
+  Note,
   Preferences,
   Quote,
   ReadingSession,
@@ -27,6 +31,11 @@ export class TraceBookDb extends Dexie {
   dailyEntries!: Table<DailyEntry, string>;
   weeklyReviews!: Table<WeeklyReview, string>;
   preferences!: Table<Preferences, string>;
+  notes!: Table<Note, string>;
+  highlights!: Table<Highlight, string>;
+  collections!: Table<Collection, string>;
+  /** Catalogue entries the reader saved offline from the public library. */
+  catalog!: Table<CatalogBook, string>;
 
   constructor() {
     super("tracebook", { cache: "immutable" });
@@ -39,6 +48,16 @@ export class TraceBookDb extends Dexie {
       dailyEntries: "id, created, day, bookId",
       weeklyReviews: "id, created, weekStart",
       preferences: "id",
+    });
+
+    // v2 adds the knowledge layer (notes + highlights) and shelves.
+    // Dexie only needs the *indexed* columns declared; the rest of each row is
+    // stored as-is, so existing tables keep their data untouched.
+    this.version(2).stores({
+      notes: "id, created, updated, bookId, *tags",
+      highlights: "id, created, bookId",
+      collections: "id, created, updated",
+      catalog: "id, category, lang, *tags",
     });
 
     this.on("populate", () => {
@@ -60,6 +79,9 @@ export const DEFAULT_PREFERENCES: Omit<Preferences, "id" | "created"> = {
   reduceMotion: false,
   lang: "en",
   plan: "free",
+  tourDone: false,
+  hintsSeen: [],
+  graphAnimated: true,
 };
 
 async function populate(database: TraceBookDb) {

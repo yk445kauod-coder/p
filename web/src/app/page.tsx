@@ -15,6 +15,7 @@ import { useI18n } from "@/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Wordmark } from "@/components/book-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import {
@@ -83,9 +84,8 @@ export default function LandingPage() {
       {/* Sticky header, sized for a phone. */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <BookOpen className="h-5 w-5 text-primary" aria-hidden />
-            {t("app.name")}
+          <Link href="/" className="flex items-center">
+            <Wordmark size={26} />
           </Link>
           <div className="flex items-center gap-1">
             <LanguageToggle />
@@ -302,10 +302,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-border/50 py-10">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 text-center text-sm text-muted-foreground">
-          <div className="flex items-center gap-2 font-medium text-foreground">
-            <BookOpen className="h-4 w-4 text-primary" aria-hidden />
-            {t("app.name")}
-          </div>
+          <Wordmark size={24} labelClassName="text-sm" />
           <p>{t("app.tagline")}</p>
           <p className="text-xs">{t("landing.footerNote")}</p>
         </div>

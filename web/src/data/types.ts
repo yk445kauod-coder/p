@@ -22,6 +22,93 @@ export interface Book {
   /** Sits on the "read next" list rather than the active shelf. */
   isFuture: boolean;
   updated: Date;
+
+  // ── catalogue provenance ────────────────────────────────────────────────
+  /** Set when the book came from the public library. */
+  catalogId?: string | null;
+  /** Direct link to read it (epub/pdf/html), when one exists. */
+  readUrl?: string | null;
+  /** Cover image, for catalogue books. */
+  coverUrl?: string | null;
+  /** Free-form tags, used for shelves and filtering. */
+  tags?: string[];
+  /** Reader's own rating, 1–5. */
+  rating?: number | null;
+}
+
+/**
+ * A reader-authored note.
+ *
+ * Deliberately markdown-with-wiki-links rather than rich text: `[[Book Title]]`
+ * and `[[Note Title]]` become edges in the knowledge graph, which is what makes
+ * the layer useful instead of a pile of text files.
+ */
+export interface Note {
+  id: string;
+  created: Date;
+  updated: Date;
+  title: string;
+  /** Markdown body, may contain [[wiki links]]. */
+  body: string;
+  /** Optional attachment to a book. */
+  bookId: string | null;
+  /** Free-form tags. */
+  tags: string[];
+  /** Pinned notes sort first. */
+  pinned: boolean;
+}
+
+/** A saved passage, distinct from a Quote by carrying a page anchor and colour. */
+export interface Highlight {
+  id: string;
+  created: Date;
+  bookId: string | null;
+  text: string;
+  /** Page or chapter the passage sits on. */
+  page: number | null;
+  /** Highlight colour token name. */
+  color: "amber" | "teal" | "violet" | "rose" | "indigo";
+  note: string | null;
+}
+
+/** A named, ordered shelf of books. The basis for remixing. */
+export interface Collection {
+  id: string;
+  created: Date;
+  updated: Date;
+  name: string;
+  description: string;
+  /** Emoji or short label shown on the shelf. */
+  icon: string;
+  /** Accent token for the shelf. */
+  color: "amber" | "teal" | "violet" | "rose" | "indigo";
+  /** Book ids, in display order. */
+  bookIds: string[];
+  /** Marks shelves shipped with the app, which cannot be edited in place. */
+  system?: boolean;
+  /** Marks a shelf that came from someone else's remix code. */
+  remixedFrom?: string | null;
+}
+
+/** A catalogue entry — a book the reader can add and read for free. */
+export interface CatalogBook {
+  id: string;
+  title: string;
+  author: string;
+  /** Language the text is in. */
+  lang: "en" | "ar";
+  category: string;
+  /** Approximate length, so the plan maths has something to work with. */
+  pages: number;
+  description: string;
+  coverUrl: string | null;
+  /** Where to read it. */
+  readUrl: string;
+  /** Direct epub/pdf download when the source offers one. */
+  downloadUrl: string | null;
+  /** Accent used on the card. */
+  color: "amber" | "teal" | "violet" | "rose" | "indigo";
+  tags: string[];
 }
 
 export interface ReadingSession {
@@ -98,6 +185,14 @@ export interface Preferences {
   lang: "en" | "ar";
   /** Subscription tier. `free` unless upgraded. */
   plan: "free" | "pro";
+
+  // ── onboarding + surface state ───────────────────────────────────────────
+  /** First-run tour completed. */
+  tourDone: boolean;
+  /** Individual coach marks dismissed, keyed by id. */
+  hintsSeen: string[];
+  /** Knowledge graph physics toggle. */
+  graphAnimated: boolean;
 }
 
 export interface DayStat {

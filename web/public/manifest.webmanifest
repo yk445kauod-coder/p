@@ -10,27 +10,13 @@
   "dir": "auto",
   "lang": "en",
   "categories": ["books", "productivity", "education"],
-  "background_color": "#12100e",
-  "theme_color": "#12100e",
+  "background_color": "#16120e",
+  "theme_color": "#16120e",
   "icons": [
-    {
-      "purpose": "any",
-      "sizes": "512x512",
-      "src": "/icon512_rounded.png",
-      "type": "image/png"
-    },
-    {
-      "purpose": "maskable",
-      "sizes": "512x512",
-      "src": "/icon512_maskable.png",
-      "type": "image/png"
-    },
-    {
-      "purpose": "any",
-      "sizes": "180x180",
-      "src": "/apple-touch-icon.png",
-      "type": "image/png"
-    }
+    { "purpose": "any", "sizes": "192x192", "src": "/icon-192.png", "type": "image/png" },
+    { "purpose": "any", "sizes": "512x512", "src": "/icon-512.png", "type": "image/png" },
+    { "purpose": "maskable", "sizes": "512x512", "src": "/icon512_maskable.png", "type": "image/png" },
+    { "purpose": "any", "sizes": "180x180", "src": "/apple-touch-icon.png", "type": "image/png" }
   ],
   "shortcuts": [
     {
@@ -39,15 +25,8 @@
       "url": "/app/",
       "icons": [{ "src": "/favicon-64.png", "sizes": "64x64", "type": "image/png" }]
     },
-    {
-      "name": "Library",
-      "short_name": "Library",
-      "url": "/app/library/"
-    },
-    {
-      "name": "Stats",
-      "short_name": "Stats",
-      "url": "/app/stats/"
-    }
+    { "name": "Library", "short_name": "Library", "url": "/app/library/" },
+    { "name": "Catalog", "short_name": "Catalog", "url": "/app/catalog/" },
+    { "name": "Notes", "short_name": "Notes", "url": "/app/notes/" }
   ]
 }

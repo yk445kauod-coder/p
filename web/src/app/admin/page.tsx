@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
 import { useI18n } from "@/i18n/provider";
+import { BookMark } from "@/components/book-mark";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -157,9 +158,7 @@ export default function AdminPage() {
     <Shell>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary-soft text-primary-strong" aria-hidden>
-            <ShieldCheck className="h-5 w-5" />
-          </div>
+          <BookMark size={44} />
           <div>
             <h1 className="text-xl font-bold tracking-tight">Admin console</h1>
             <p className="text-xs text-muted-foreground">{reader?.email}</p>

@@ -34,6 +34,18 @@ export const metadata: Metadata = {
     "Track reading sessions, streaks, stats, quotes and goals with an AI reading coach. Installable, works offline, free to start.",
   manifest: "/manifest.webmanifest",
   applicationName: "TraceBook",
+  // Next generates the tab icon from src/app/favicon.ico; these are the explicit
+  // sizes so a browser and an iOS home screen both pick a crisp one.
+  icons: {
+    icon: [
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon-32.png",
+    apple: "/apple-touch-icon.png",
+  },
   // `appleWebApp` emits the modern `mobile-web-app-capable` plus the Apple
   // variants, which is what iOS actually reads.
   appleWebApp: {

@@ -1,0 +1,53 @@
+{
+  "name": "TraceBook — reading habit tracker",
+  "short_name": "TraceBook",
+  "description": "Track reading sessions, streaks, stats, quotes and goals with an AI reading coach. Works offline.",
+  "id": "/app/",
+  "start_url": "/app/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "dir": "auto",
+  "lang": "en",
+  "categories": ["books", "productivity", "education"],
+  "background_color": "#12100e",
+  "theme_color": "#12100e",
+  "icons": [
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "/icon512_rounded.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "/icon512_maskable.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "180x180",
+      "src": "/apple-touch-icon.png",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Log a session",
+      "short_name": "Log",
+      "url": "/app/",
+      "icons": [{ "src": "/favicon-64.png", "sizes": "64x64", "type": "image/png" }]
+    },
+    {
+      "name": "Library",
+      "short_name": "Library",
+      "url": "/app/library/"
+    },
+    {
+      "name": "Stats",
+      "short_name": "Stats",
+      "url": "/app/stats/"
+    }
+  ]
+}

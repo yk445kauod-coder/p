@@ -26,10 +26,18 @@ interface SettingsValue {
   dailyGoalMinutes: number;
   /** Pages the reader is trying to get through in the current book. */
   shelfGoalPages: number;
+  /** Pages the reader wants to read on each reading day. */
+  dailyPagesGoal: number;
   /** Preferred reading time, `HH:MM`. */
   readingTime: string;
   /** Weekday numbers (0=Sunday … 6=Saturday) planned as rest days. */
   restDays: number[];
+  /** Weekday numbers reserved for reviewing what was already read. */
+  reviewDays: number[];
+  /** Whether the in-app reading alarm is armed. */
+  alarmEnabled: boolean;
+  /** Local `HH:MM` the alarm rings. */
+  alarmTime: string;
   ritualDrink: string;
   /** Master switch for reminders and notifications. */
   notifyEnabled: boolean;
@@ -43,8 +51,12 @@ interface SettingsValue {
   setReduceMotion: (v: boolean) => void;
   setDailyGoalMinutes: (v: number) => void;
   setShelfGoalPages: (v: number) => void;
+  setDailyPagesGoal: (v: number) => void;
   setReadingTime: (v: string) => void;
   toggleRestDay: (weekday: number) => void;
+  toggleReviewDay: (weekday: number) => void;
+  setAlarmEnabled: (v: boolean) => void;
+  setAlarmTime: (v: string) => void;
   setRitualDrink: (id: string) => void;
   setLang: (l: Lang) => void;
   setNotifyEnabled: (v: boolean) => void;
@@ -60,8 +72,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [reduceMotion, setReduceMotionState] = useState(false);
   const [dailyGoalMinutes, setDailyGoalState] = useState(30);
   const [shelfGoalPages, setShelfGoalState] = useState(320);
+  const [dailyPagesGoal, setDailyPagesGoalState] = useState(10);
   const [readingTime, setReadingTimeState] = useState("22:30");
   const [restDays, setRestDays] = useState<number[]>([]);
+  const [reviewDays, setReviewDays] = useState<number[]>([]);
+  const [alarmEnabled, setAlarmEnabledState] = useState(false);
+  const [alarmTime, setAlarmTimeState] = useState("21:00");
   const [ritualDrink, setRitualDrinkState] = useState("laban");
   const [notifyEnabled, setNotifyEnabledState] = useState(true);
   const [notifyReminder, setNotifyReminderState] = useState(true);
@@ -81,8 +97,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (typeof v.reduceMotion === "boolean") setReduceMotionState(v.reduceMotion);
         if (typeof v.dailyGoalMinutes === "number") setDailyGoalState(v.dailyGoalMinutes);
         if (typeof v.shelfGoalPages === "number") setShelfGoalState(v.shelfGoalPages);
+        if (typeof v.dailyPagesGoal === "number") setDailyPagesGoalState(v.dailyPagesGoal);
         if (typeof v.readingTime === "string") setReadingTimeState(v.readingTime);
         if (Array.isArray(v.restDays)) setRestDays(v.restDays.filter((n: unknown) => typeof n === "number"));
+        if (Array.isArray(v.reviewDays)) setReviewDays(v.reviewDays.filter((n: unknown) => typeof n === "number"));
+        if (typeof v.alarmEnabled === "boolean") setAlarmEnabledState(v.alarmEnabled);
+        if (typeof v.alarmTime === "string") setAlarmTimeState(v.alarmTime);
         if (typeof v.ritualDrink === "string") setRitualDrinkState(v.ritualDrink);
         if (typeof v.notifyEnabled === "boolean") setNotifyEnabledState(v.notifyEnabled);
         if (typeof v.notifyReminder === "boolean") setNotifyReminderState(v.notifyReminder);
@@ -106,8 +126,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setDailyGoalState(p.daily_goal_minutes);
         setReduceMotionState(p.reduce_motion);
         setShelfGoalState(p.shelf_goal_pages);
+        setDailyPagesGoalState(p.daily_pages_goal);
         setReadingTimeState(p.reading_time);
         setRestDays(Array.isArray(p.rest_days) ? p.rest_days : []);
+        setReviewDays(Array.isArray(p.review_days) ? p.review_days : []);
+        setAlarmEnabledState(p.alarm_enabled);
+        setAlarmTimeState(p.alarm_time);
         setRitualDrinkState(p.ritual_drink);
         setNotifyEnabledState(p.notify_enabled);
         setNotifyReminderState(p.notify_reminder);
@@ -140,8 +164,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       reduceMotion,
       dailyGoalMinutes,
       shelfGoalPages,
+      dailyPagesGoal,
       readingTime,
       restDays,
+      reviewDays,
+      alarmEnabled,
+      alarmTime,
       ritualDrink,
       notifyEnabled,
       notifyReminder,
@@ -164,6 +192,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setShelfGoalState(v);
         persist({ shelf_goal_pages: v });
       },
+      setDailyPagesGoal: (v) => {
+        setDailyPagesGoalState(v);
+        persist({ daily_pages_goal: v });
+      },
       setReadingTime: (v) => {
         setReadingTimeState(v);
         persist({ reading_time: v });
@@ -174,6 +206,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           persist({ rest_days: next });
           return next;
         });
+      },
+      toggleReviewDay: (weekday) => {
+        setReviewDays((prev) => {
+          const next = prev.includes(weekday) ? prev.filter((d) => d !== weekday) : [...prev, weekday].sort();
+          persist({ review_days: next });
+          return next;
+        });
+      },
+      setAlarmEnabled: (v) => {
+        setAlarmEnabledState(v);
+        persist({ alarm_enabled: v });
+      },
+      setAlarmTime: (v) => {
+        setAlarmTimeState(v);
+        persist({ alarm_time: v });
       },
       setRitualDrink: (id) => {
         setRitualDrinkState(id);
@@ -196,7 +243,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         persist({ notify_reminder_time: v });
       },
     }),
-    [themeMode, reduceMotion, dailyGoalMinutes, shelfGoalPages, readingTime, restDays, ritualDrink, notifyEnabled, notifyReminder, notifyReminderTime, lang, ready],
+    [themeMode, reduceMotion, dailyGoalMinutes, shelfGoalPages, dailyPagesGoal, readingTime, restDays, reviewDays, alarmEnabled, alarmTime, ritualDrink, notifyEnabled, notifyReminder, notifyReminderTime, lang, ready],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

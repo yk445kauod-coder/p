@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData, type Book, type BookStatus } from "../store/data";

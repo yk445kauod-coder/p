@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
+import { Platform, Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
+import { Text } from "./Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mascot } from "./mascot/Mascot";
 import { emitPointer, emitPointerAway } from "./mascot/pointer";
 import { AIChatSheet } from "./AIChatSheet";
 import { NotificationCenter } from "./NotificationCenter";
+import { ReadingAlarm } from "./ReadingAlarm";
+import { LogSessionSheet } from "./LogSessionSheet";
 import { useTheme } from "../theme/ThemeProvider";
 import { useFinePointer } from "../theme/useReducedMotion";
 import { useI18n } from "../i18n";
@@ -33,6 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [seed, setSeed] = useState<string | null>(null);
   const [bellOpen, setBellOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
 
   const report = useCallback((e: GestureResponderEvent) => {
     const { pageX, pageY } = e.nativeEvent;
@@ -124,6 +128,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </View>
 
       <NotificationCenter visible={bellOpen} onClose={() => setBellOpen(false)} />
+
+      {/* In-app reading alarm: rings once a day at the reader's chosen time. */}
+      <ReadingAlarm onLog={() => setLogOpen(true)} />
+
+      <LogSessionSheet visible={logOpen} onClose={() => setLogOpen(false)} />
 
       <AIChatSheet
         visible={chatOpen}

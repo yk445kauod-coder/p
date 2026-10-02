@@ -5,6 +5,8 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ThemeProvider, useTheme } from "./theme/ThemeProvider";
+import { useAppFonts } from "./theme/useAppFonts";
+import { fontFor } from "./theme/typography";
 import { SettingsProvider, useSettings } from "./store/settings";
 import { AuthProvider, useAuth } from "./store/auth";
 import { DataProvider } from "./store/data";
@@ -37,7 +39,10 @@ function initialTab(): (typeof TAB_NAMES)[number] {
 function Tabs() {
   const theme = useTheme();
   const c = theme.colors;
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  // React Navigation renders tab labels with its own Text, so the family has to
+  // be supplied here rather than inherited from our Text wrapper.
+  const labelFont = fontFor("600", lang === "ar");
 
   return (
     <AppShell>
@@ -55,7 +60,7 @@ function Tabs() {
             paddingTop: 8,
             paddingBottom: 12,
           },
-          tabBarLabelStyle: { fontSize: 11.5, fontWeight: "600" },
+          tabBarLabelStyle: { fontSize: 11.5, fontFamily: labelFont },
           tabBarIcon: ({ color }: { color: string }) => <TabIcon name={route.name.toLowerCase()} color={color} />,
         })}
       >
@@ -72,8 +77,11 @@ function Gate() {
   const theme = useTheme();
   const c = theme.colors;
   const { user, ready } = useAuth();
+  const fontsLoaded = useAppFonts();
 
-  if (!ready) {
+  // Hold the splash until both the session and the fonts resolve, so the first
+  // screen never flashes the system font and then reflows into IBM Plex.
+  if (!ready || !fontsLoaded) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg }}>
         <ActivityIndicator color={c.primary} />

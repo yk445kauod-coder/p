@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Text, TextInput } from "../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, useThemeMode } from "../theme/ThemeProvider";
 import { useSettings, RITUAL_DRINKS } from "../store/settings";
@@ -50,6 +51,14 @@ export function ProfileScreen() {
     setReadingTime,
     shelfGoalPages,
     setShelfGoalPages,
+    dailyPagesGoal,
+    setDailyPagesGoal,
+    reviewDays,
+    toggleReviewDay,
+    alarmEnabled,
+    setAlarmEnabled,
+    alarmTime,
+    setAlarmTime,
     notifyEnabled,
     setNotifyEnabled,
     notifyReminder,
@@ -267,6 +276,57 @@ export function ProfileScreen() {
               );
             })}
           </View>
+
+          <Text style={[styles.subLabel, { color: c.textMuted }]}>{t("profile.dailyPages")}</Text>
+          <Text style={{ color: c.textMuted, fontSize: 12.5, marginBottom: 8 }}>{t("profile.dailyPagesHint")}</Text>
+          <View style={styles.chipRow}>
+            {[5, 10, 15, 20, 30, 50].map((p) => {
+              const active = dailyPagesGoal === p;
+              return (
+                <Pressable
+                  key={p}
+                  onPress={() => setDailyPagesGoal(p)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.goalChip,
+                    { borderColor: active ? c.accent : c.border, backgroundColor: active ? c.accentSoft : "transparent" },
+                  ]}
+                >
+                  <Text style={{ color: active ? c.accent : c.textMuted, fontWeight: "700", fontSize: 13 }}>
+                    {t("profile.pagesChip", { count: p })}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
+        {/* Review days */}
+        <SectionTitle>{t("profile.reviewDays")}</SectionTitle>
+        <Card>
+          <Text style={{ color: c.textMuted, fontSize: 12.5, marginBottom: 12 }}>{t("profile.reviewDaysHint")}</Text>
+          <View style={styles.chipRow}>
+            {WEEKDAYS.map((d, i) => {
+              const active = reviewDays.includes(i);
+              return (
+                <Pressable
+                  key={d}
+                  onPress={() => toggleReviewDay(i)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.dayChip,
+                    { borderColor: active ? c.primary : c.border, backgroundColor: active ? c.primarySoft : "transparent" },
+                  ]}
+                >
+                  <Text style={{ color: active ? c.primary : c.textMuted, fontSize: 12.5, fontWeight: "700" }}>
+                    {t(`weekday.${d}` as never)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </Card>
 
         {/* Rest days */}
@@ -331,6 +391,25 @@ export function ProfileScreen() {
             placeholderTextColor={c.textFaint}
             style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.surface }]}
           />
+        </Card>
+
+        {/* Reading alarm */}
+        <SectionTitle>{t("profile.alarm")}</SectionTitle>
+        <Card style={{ gap: 12 }}>
+          <Text style={{ color: c.textMuted, fontSize: 12.5 }}>{t("profile.alarmHint")}</Text>
+          <ToggleRow label={t("profile.alarmEnable")} value={alarmEnabled} onValueChange={setAlarmEnabled} />
+          {alarmEnabled ? (
+            <View>
+              <Text style={[styles.subLabel, { color: c.textMuted }]}>{t("profile.alarmTime")}</Text>
+              <TextInput
+                value={alarmTime}
+                onChangeText={setAlarmTime}
+                placeholder="21:00"
+                placeholderTextColor={c.textFaint}
+                style={[styles.timeInput, { color: c.text, borderColor: c.border, backgroundColor: c.surfaceAlt }]}
+              />
+            </View>
+          ) : null}
         </Card>
 
         {/* Weekly review */}

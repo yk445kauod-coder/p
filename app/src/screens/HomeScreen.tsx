@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData } from "../store/data";
@@ -12,7 +13,10 @@ import { Logo } from "../components/Logo";
 import { GridBackground, AuroraBackdrop } from "../components/visuals";
 import { LogSessionSheet } from "../components/LogSessionSheet";
 import { AnimatedEmoji } from "../components/motion/AnimatedEmoji";
+import { PlanBar } from "../components/PlanBar";
+import { DailyTakeawayCard } from "../components/DailyTakeawayCard";
 import { badgeText, nextBadge, unlockedBadges, BADGES } from "../domain/achievements";
+import { computePlan, badgeProgress } from "../domain/plan";
 import { dailyQuote } from "../domain/quotes";
 
 export function HomeScreen() {
@@ -20,7 +24,7 @@ export function HomeScreen() {
   const c = theme.colors;
   const insets = useSafeAreaInsets();
   const { stats, books, futureBooks } = useData();
-  const { dailyGoalMinutes, ritualDrink, restDays, shelfGoalPages } = useSettings();
+  const { dailyGoalMinutes, ritualDrink, restDays, reviewDays, dailyPagesGoal, shelfGoalPages } = useSettings();
   const { t, lang } = useI18n();
   const [logOpen, setLogOpen] = useState(false);
   const [quoteOffset, setQuoteOffset] = useState(0);
@@ -41,12 +45,22 @@ export function HomeScreen() {
   const next = useMemo(() => nextBadge(stats.streak), [stats.streak]);
 
   const isRestToday = restDays.includes(new Date().getDay());
+  const isReviewToday = reviewDays.includes(new Date().getDay());
   const loggedToday = stats.todayMinutes > 0;
 
+  const plan = useMemo(
+    () =>
+      computePlan({
+        totalPages: primary?.total_pages ?? 0,
+        currentPage: primary?.current_page ?? 0,
+        dailyPagesGoal,
+        offDays: [...restDays, ...reviewDays],
+      }),
+    [primary?.current_page, primary?.total_pages, dailyPagesGoal, restDays, reviewDays],
+  );
+
   const shelfPct = primary && shelfGoalPages > 0 ? Math.min(1, primary.current_page / shelfGoalPages) : 0;
-  const pagesLeft = Math.max(0, shelfGoalPages - (primary?.current_page ?? 0));
-  // Rough planning estimate: a minute of reading is about a page.
-  const daysLeft = pagesLeft > 0 ? Math.ceil(pagesLeft / Math.max(1, dailyGoalMinutes)) : 0;
+  const pagesLeft = plan.pagesLeft;
 
   const ritual = RITUAL_DRINKS.find((d) => d.id === ritualDrink) ?? RITUAL_DRINKS[0];
 
@@ -80,9 +94,11 @@ export function HomeScreen() {
               <Text style={[styles.streakLabel, { color: c.textMuted }]}>
                 {isRestToday
                   ? t("home.restDay")
-                  : stats.streak > 0
-                    ? t("home.streakKeepGoing")
-                    : t("home.streakStart")}
+                  : isReviewToday
+                    ? t("home.reviewDay")
+                    : stats.streak > 0
+                      ? t("home.streakKeepGoing")
+                      : t("home.streakStart")}
               </Text>
             </View>
             <Badge text={t("home.best", { count: stats.bestStreak })} tone="accent" emoji="🏅" />
@@ -122,7 +138,7 @@ export function HomeScreen() {
           </View>
         </Card>
 
-        {/* Shelf progress */}
+        {/* Shelf progress + plan */}
         {primary ? (
           <>
             <SectionTitle>{t("home.shelfProgress")}</SectionTitle>
@@ -143,21 +159,34 @@ export function HomeScreen() {
                     <Text style={{ color: c.textFaint, fontSize: 11.5 }}>
                       {t("home.pagesLeft", { count: pagesLeft })}
                     </Text>
-                    {daysLeft > 0 ? (
+                    {plan.calendarDaysLeft > 0 ? (
                       <Text style={{ color: c.textFaint, fontSize: 11.5 }}>
-                        {t("home.daysLeft", { count: daysLeft })}
+                        {t("home.daysLeft", { count: plan.calendarDaysLeft })}
                       </Text>
                     ) : null}
                   </View>
                 </View>
               </View>
             </Card>
+
+            <View style={{ marginTop: 14 }}>
+              <PlanBar
+                daysLeft={plan.readingDaysNeeded}
+                percentLeft={plan.percentLeft}
+                dailyPagesGoal={dailyPagesGoal}
+                finishDate={plan.finishDate}
+                pagesLeft={plan.pagesLeft}
+                startDate={stats.startDate}
+              />
+            </View>
           </>
         ) : (
           <Card style={{ marginTop: 4 }}>
             <Text style={[styles.emptyText, { color: c.textMuted }]}>{t("home.noBook")}</Text>
           </Card>
         )}
+
+        <DailyTakeawayCard />
 
         {/* Daily quote */}
         <View style={{ marginTop: 22 }}>
@@ -208,9 +237,21 @@ export function HomeScreen() {
               })}
             </ScrollView>
             {next ? (
-              <Text style={{ color: c.textMuted, fontSize: 12.5, marginTop: 12 }}>
-                {t("home.nextBadge", { days: next.days - stats.streak, title: badgeText(next, lang).title })}
-              </Text>
+              <View style={{ marginTop: 14 }}>
+                <View style={styles.badgeProgressRow}>
+                  <Text style={{ color: c.textMuted, fontSize: 12.5 }}>
+                    {t("home.nextBadge", { days: next.days - stats.streak, title: badgeText(next, lang).title })}
+                  </Text>
+                  <Text style={{ color: c.primary, fontSize: 12, fontWeight: "700" }}>
+                    {stats.streak}/{next.days}
+                  </Text>
+                </View>
+                <View style={{ marginTop: 8 }}>
+                  <ProgressBar
+                    value={badgeProgress(stats.streak, next.days, unlocked.length ? BADGES[unlocked.length - 1].days : 0)}
+                  />
+                </View>
+              </View>
             ) : (
               <Text style={{ color: c.success, fontSize: 12.5, marginTop: 12 }}>{t("home.allBadges")}</Text>
             )}
@@ -331,6 +372,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 13.5, lineHeight: 20 },
   quoteText: { fontSize: 15, lineHeight: 23, fontStyle: "italic" },
   badgeRow: { gap: 10 },
+  badgeProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
   badgeTile: { width: 78, alignItems: "center", gap: 4, paddingVertical: 12, borderRadius: 16, borderWidth: 1 },
   legendRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 },
   legendCell: { width: 14, height: 14, borderRadius: 4 },

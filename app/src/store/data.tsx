@@ -13,6 +13,7 @@ export type ReadingSession = db.ReadingSession;
 export type Goal = db.Goal;
 export type Quote = db.Quote;
 export type WeeklyReview = db.WeeklyReview;
+export type DailyEntry = db.DailyEntry;
 
 export interface DayStat {
   date: string;
@@ -34,6 +35,10 @@ export interface Stats {
   weekMinutes: number;
   /** Average minutes on days the reader actually read. */
   avgMinutes: number;
+  /** First day with any activity — the start of the journey. */
+  startDate: string | null;
+  /** Consecutive reading days including planned rest and review days. */
+  primeDays: number;
 }
 
 interface DataValue {
@@ -47,6 +52,7 @@ interface DataValue {
   goals: Goal[];
   quotes: Quote[];
   weeklyReviews: WeeklyReview[];
+  dailyEntries: DailyEntry[];
   stats: Stats;
   addBook: (b: {
     title: string;
@@ -76,6 +82,15 @@ interface DataValue {
   addQuote: (q: { book_id?: string | null; text: string; page?: number | null }) => Promise<void>;
   deleteQuote: (id: string) => Promise<void>;
   saveWeeklyReview: (r: { week_start: string; week_end: string; good: string; to_improve: string }) => Promise<void>;
+  saveDailyEntry: (e: {
+    entry_date: string;
+    book_id?: string | null;
+    pages_from?: number | null;
+    pages_to?: number | null;
+    summary: string;
+    essence?: string | null;
+  }) => Promise<void>;
+  deleteDailyEntry: (id: string) => Promise<void>;
   sync: () => Promise<void>;
   clearAll: () => Promise<void>;
 }
@@ -92,6 +107,7 @@ interface Cache {
   goals: Goal[];
   quotes: Quote[];
   weeklyReviews: WeeklyReview[];
+  dailyEntries: DailyEntry[];
   lastSync: number | null;
 }
 
@@ -102,10 +118,16 @@ const EMPTY: Cache = {
   goals: [],
   quotes: [],
   weeklyReviews: [],
+  dailyEntries: [],
   lastSync: null,
 };
 
-function computeStats(sessions: ReadingSession[], books: Book[], restDays: number[]): Stats {
+function computeStats(
+  sessions: ReadingSession[],
+  books: Book[],
+  restDays: number[],
+  reviewDays: number[] = [],
+): Stats {
   const byDay = new Map<string, { minutes: number; pages: number }>();
   let totalMinutes = 0;
   let totalPages = 0;
@@ -119,7 +141,7 @@ function computeStats(sessions: ReadingSession[], books: Book[], restDays: numbe
     totalPages += s.pages_read;
   }
 
-  const streak: StreakResult = computeStreak({ activeDays: new Set(byDay.keys()), restDays });
+  const streak: StreakResult = computeStreak({ activeDays: new Set(byDay.keys()), restDays, reviewDays });
 
   const today = toDayKey(new Date());
   const last30: DayStat[] = [];
@@ -134,6 +156,10 @@ function computeStats(sessions: ReadingSession[], books: Book[], restDays: numbe
   const activeDaysCount = [...byDay.values()].filter((v) => v.minutes > 0).length;
   const todayStat = byDay.get(today) ?? { minutes: 0, pages: 0 };
 
+  // Planned days off are excluded from "missed", but they still extend a prime
+  // run — showing up around them is the point of scheduling them.
+  const primeDays = streak.current;
+
   return {
     totalMinutes,
     totalPages,
@@ -147,12 +173,14 @@ function computeStats(sessions: ReadingSession[], books: Book[], restDays: numbe
     todayPages: todayStat.pages,
     weekMinutes: last30.slice(-7).reduce((a, d) => a + d.minutes, 0),
     avgMinutes: activeDaysCount ? Math.round(totalMinutes / activeDaysCount) : 0,
+    startDate: [...byDay.keys()].sort()[0] ?? null,
+    primeDays,
   };
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user, offline } = useAuth();
-  const { restDays } = useSettings();
+  const { restDays, reviewDays } = useSettings();
   const { push: notify } = useNotifications();
   const [cache, setCache] = useState<Cache>(EMPTY);
   const [ready, setReady] = useState(false);
@@ -185,18 +213,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setSyncing(true);
     setError(null);
     try {
-      const [books, futureBooks, sessions, goals, quotes, weeklyReviews] = await Promise.all([
+      const [books, futureBooks, sessions, goals, quotes, weeklyReviews, dailyEntries] = await Promise.all([
         db.fetchBooks(),
         db.fetchFutureBooks(),
         db.fetchSessions(),
         db.fetchGoals(),
         db.fetchQuotes(),
         db.fetchWeeklyReviews(),
+        db.fetchDailyEntries(),
       ]);
       // The active shelf excludes anything parked on the "read next" list.
       const shelf = books.filter((b) => !b.is_future);
       const ts = Date.now();
-      persist({ books: shelf, futureBooks, sessions, goals, quotes, weeklyReviews, lastSync: ts });
+      persist({ books: shelf, futureBooks, sessions, goals, quotes, weeklyReviews, dailyEntries, lastSync: ts });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -225,7 +254,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       goals: cache.goals,
       quotes: cache.quotes,
       weeklyReviews: cache.weeklyReviews,
-      stats: computeStats(cache.sessions, cache.books, restDays),
+      dailyEntries: cache.dailyEntries,
+      stats: computeStats(cache.sessions, cache.books, restDays, reviewDays),
 
       addBook: async (input) => {
         const now = new Date().toISOString();
@@ -310,8 +340,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
         // Celebrate only the moments worth interrupting for: a fresh streak
         // milestone, or a book that just crossed into "finished".
-        const before = computeStats(cache.sessions, cache.books, restDays).streak;
-        const after = computeStats([optimistic, ...cache.sessions], nextBooks, restDays).streak;
+        const before = computeStats(cache.sessions, cache.books, restDays, reviewDays).streak;
+        const after = computeStats([optimistic, ...cache.sessions], nextBooks, restDays, reviewDays).streak;
         if (after > before && after > 0 && after % 7 === 0) {
           void notify({
             kind: "streak",
@@ -453,13 +483,60 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       },
 
+      saveDailyEntry: async (input) => {
+        const now = new Date().toISOString();
+        const optimistic: DailyEntry = {
+          id: `local-${uid()}`,
+          book_id: input.book_id ?? null,
+          entry_date: input.entry_date,
+          pages_from: input.pages_from ?? null,
+          pages_to: input.pages_to ?? null,
+          summary: input.summary,
+          essence: input.essence ?? null,
+          created_at: now,
+          updated_at: now,
+        };
+        // One entry per day: replace any existing row for that date.
+        const others = cache.dailyEntries.filter((e) => e.entry_date !== input.entry_date);
+        local({ dailyEntries: [optimistic, ...others] });
+        if (cloud) {
+          try {
+            const saved = await db.upsertDailyEntry(input);
+            setCache((prev) => {
+              const merged = {
+                ...prev,
+                dailyEntries: [
+                  saved,
+                  ...prev.dailyEntries.filter((e) => e.entry_date !== input.entry_date),
+                ],
+              };
+              AsyncStorage.setItem(KEY, JSON.stringify(merged)).catch(() => undefined);
+              return merged;
+            });
+          } catch (e) {
+            setError((e as Error).message);
+          }
+        }
+      },
+
+      deleteDailyEntry: async (id) => {
+        local({ dailyEntries: cache.dailyEntries.filter((e) => e.id !== id) });
+        if (cloud && !id.startsWith("local-")) {
+          try {
+            await db.removeDailyEntry(id);
+          } catch (e) {
+            setError((e as Error).message);
+          }
+        }
+      },
+
       sync,
       clearAll: async () => {
         setCache(EMPTY);
         await AsyncStorage.removeItem(KEY);
       },
     };
-  }, [cache, cloud, error, notify, persist, ready, restDays, sync, syncing]);
+  }, [cache, cloud, error, notify, persist, ready, restDays, reviewDays, sync, syncing]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

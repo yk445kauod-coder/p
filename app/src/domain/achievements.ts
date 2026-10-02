@@ -76,6 +76,8 @@ export interface StreakInput {
   activeDays: Set<string>;
   /** Weekday numbers (0=Sunday … 6=Saturday) the reader plans to rest. */
   restDays: number[];
+  /** Weekday numbers reserved for reviewing — also break-proof. */
+  reviewDays?: number[];
   today?: Date;
 }
 
@@ -88,11 +90,16 @@ export interface StreakResult {
 /**
  * Computes the current/longest streak and missed days.
  *
- * A rest day is skipped without breaking the run; a missed day is one that had no
- * reading and was not a planned rest. Today never counts as missed.
+ * A rest day or a review day is skipped without breaking the run; a missed day is
+ * one that had no reading and was not planned. Today never counts as missed.
  */
-export function computeStreak({ activeDays, restDays, today = new Date() }: StreakInput): StreakResult {
-  const rest = new Set(restDays);
+export function computeStreak({
+  activeDays,
+  restDays,
+  reviewDays = [],
+  today = new Date(),
+}: StreakInput): StreakResult {
+  const rest = new Set([...restDays, ...reviewDays]);
   const todayKey = toDayKey(today);
 
   const sorted = [...activeDays].sort();
@@ -157,8 +164,9 @@ export interface PrimePeriod {
 export function findPrimePeriods(
   entries: { date: string; applied: boolean | null }[],
   restDays: number[],
+  reviewDays: number[] = [],
 ): PrimePeriod[] {
-  const rest = new Set(restDays);
+  const rest = new Set([...restDays, ...reviewDays]);
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   if (sorted.length < 7) return [];
 

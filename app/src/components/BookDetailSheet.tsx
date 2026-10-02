@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData, type Book, type BookStatus } from "../store/data";
 import { useI18n, type TranslationKey } from "../i18n";
 import { Button, ProgressBar } from "./ui";
 import { SheetFrame } from "./SheetFrame";
+import { BookEssence } from "./BookEssence";
 import { categoryLabel } from "../domain/achievements";
 import { useToast } from "./motion/Toast";
 
@@ -124,6 +126,10 @@ export function BookDetailSheet({ book, onClose }: { book: Book | null; onClose:
           );
         })}
       </View>
+
+      <Text style={[styles.section, { color: c.text }]}>{t("book.essence")}</Text>
+      <Text style={{ color: c.textMuted, fontSize: 12.5, marginBottom: 12 }}>{t("book.essenceHint")}</Text>
+      <BookEssence bookId={book.id} />
 
       <Text style={[styles.section, { color: c.text }]}>{t("book.quotes")}</Text>
       {bookQuotes.length === 0 ? (

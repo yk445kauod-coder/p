@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Switch, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData } from "../store/data";
@@ -76,7 +77,7 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [allowActions, setAllowActions] = useState(true);
   const listRef = useRef<FlatList<Message>>(null);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const seedSent = useRef<string | null>(null);
 
   useEffect(() => {
@@ -244,7 +245,7 @@ export function AIChatSheet({ visible, onClose, seed }: Props) {
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <AnimatedEmoji size={26} loop>🦉</AnimatedEmoji>
+              <AnimatedEmoji size={26} loop>🔖</AnimatedEmoji>
               <View>
                 <Text style={[styles.title, { color: c.text }]}>{t("ai.title")}</Text>
                 <Text style={[styles.subtitle, { color: c.textMuted }]}>{t("ai.subtitle")}</Text>

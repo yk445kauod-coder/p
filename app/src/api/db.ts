@@ -25,6 +25,14 @@ export interface Profile {
   ritual_drink: string;
   /** Pages in the book currently being finished, used for the shelf progress ring. */
   shelf_goal_pages: number;
+  /** Pages the reader wants to get through each reading day. */
+  daily_pages_goal: number;
+  /** Weekday numbers reserved for reviewing what was read. */
+  review_days: number[];
+  /** Whether the in-app reading alarm is armed. */
+  alarm_enabled: boolean;
+  /** Local `HH:MM` the alarm rings. */
+  alarm_time: string;
   /** Preferred reading time, `HH:MM`. */
   reading_time: string;
   /** Master switch for reminders and notifications. */
@@ -64,6 +72,23 @@ export interface ReadingSession {
   /** One-line summary of what today's reading was about. */
   summary: string | null;
   created_at: string;
+}
+
+/**
+ * One row per reader per day: the summary written from that day's pages, plus
+ * the running "essence" of the book being read.
+ */
+export interface DailyEntry {
+  id: string;
+  book_id: string | null;
+  /** ISO day key (`YYYY-MM-DD`). */
+  entry_date: string;
+  pages_from: number | null;
+  pages_to: number | null;
+  summary: string;
+  essence: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WeeklyReview {
@@ -161,6 +186,47 @@ export async function fetchWeeklyReviews(): Promise<WeeklyReview[]> {
     .limit(52);
   if (error) throw error;
   return (data ?? []) as WeeklyReview[];
+}
+
+export async function fetchDailyEntries(limit = 400): Promise<DailyEntry[]> {
+  const { data, error } = await db()
+    .from("daily_entries")
+    .select("*")
+    .order("entry_date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as DailyEntry[];
+}
+
+/**
+ * Saves the day's reflection. A reader gets one entry per day, so this is an
+ * upsert keyed on (user, date) rather than a fresh insert.
+ */
+export async function upsertDailyEntry(input: {
+  entry_date: string;
+  book_id?: string | null;
+  pages_from?: number | null;
+  pages_to?: number | null;
+  summary: string;
+  essence?: string | null;
+}): Promise<DailyEntry> {
+  const { data: user } = await db().auth.getUser();
+  if (!user.user) throw new Error("unauthorized");
+  const { data, error } = await db()
+    .from("daily_entries")
+    .upsert(
+      { ...input, user_id: user.user.id, updated_at: new Date().toISOString() },
+      { onConflict: "user_id,entry_date" },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as DailyEntry;
+}
+
+export async function removeDailyEntry(id: string): Promise<void> {
+  const { error } = await db().from("daily_entries").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function upsertWeeklyReview(input: {

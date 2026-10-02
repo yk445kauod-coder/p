@@ -1,18 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type StyleProp,
-  type TextInputProps,
-  type ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Animated, Easing, Platform, Pressable, StyleSheet, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
+import { Text, TextInput } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
 import { useReducedMotion } from "../theme/useReducedMotion";
 

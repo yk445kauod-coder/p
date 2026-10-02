@@ -1,28 +1,30 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 import { useData } from "../store/data";
 import { useSettings } from "../store/settings";
-import { Card, SectionTitle, SegmentedControl, Button } from "../components/ui";
+import { Card, SectionTitle, SegmentedControl, Button, Badge } from "../components/ui";
 import { Heatmap } from "../components/Heatmap";
 import { GridBackground, AuroraBackdrop } from "../components/visuals";
 import { useI18n } from "../i18n";
-import { findPrimePeriods } from "../domain/achievements";
+import { findPrimePeriods, BADGES, badgeText } from "../domain/achievements";
+import { daysSince } from "../domain/plan";
 import { AnimatedEmoji } from "../components/motion/AnimatedEmoji";
 import { openChat } from "../ai/bus";
 
-type Range = "week" | "month" | "quarter" | "year";
+type Range = "week" | "fortnight" | "month" | "twomonth" | "year";
 
-const RANGE_DAYS: Record<Range, number> = { week: 7, month: 30, quarter: 90, year: 365 };
+const RANGE_DAYS: Record<Range, number> = { week: 7, fortnight: 15, month: 30, twomonth: 60, year: 365 };
 
 export function StatsScreen() {
   const theme = useTheme();
   const c = theme.colors;
   const insets = useSafeAreaInsets();
   const { stats, sessions, books } = useData();
-  const { restDays } = useSettings();
-  const { t } = useI18n();
+  const { restDays, reviewDays } = useSettings();
+  const { t, lang } = useI18n();
   const [range, setRange] = useState<Range>("month");
 
   const days = RANGE_DAYS[range];
@@ -49,8 +51,8 @@ export function StatsScreen() {
 
   // The bar chart can't show 365 bars legibly, so bucket by week for long ranges.
   const bars = useMemo(() => {
-    if (days <= 30) return series.map((d) => ({ date: d.date, minutes: d.minutes }));
-    const bucket = days <= 90 ? 7 : 30;
+    if (days <= 60) return series.map((d) => ({ date: d.date, minutes: d.minutes }));
+    const bucket = 30;
     const out: { date: string; minutes: number }[] = [];
     for (let i = 0; i < series.length; i += bucket) {
       const slice = series.slice(i, i + bucket);
@@ -81,8 +83,9 @@ export function StatsScreen() {
       findPrimePeriods(
         sessions.map((s) => ({ date: s.started_at.slice(0, 10), applied: s.applied_yesterday })),
         restDays,
+        reviewDays,
       ),
-    [sessions, restDays],
+    [sessions, restDays, reviewDays],
   );
 
   const activeDays = series.filter((d) => d.minutes > 0).length;
@@ -106,11 +109,33 @@ export function StatsScreen() {
           onChange={setRange}
           options={[
             { value: "week", label: t("stats.week") },
+            { value: "fortnight", label: t("stats.fortnight") },
             { value: "month", label: t("stats.month") },
-            { value: "quarter", label: t("stats.quarter") },
+            { value: "twomonth", label: t("stats.twomonth") },
             { value: "year", label: t("stats.year") },
           ]}
         />
+
+        {/* Journey start */}
+        {stats.startDate ? (
+          <Card style={{ marginTop: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <AnimatedEmoji size={24}>🗓️</AnimatedEmoji>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: c.text, fontSize: 14, fontWeight: "700" }}>
+                {t("stats.journeyStart")}
+              </Text>
+              <Text style={{ color: c.textMuted, fontSize: 12.5, marginTop: 2 }}>
+                {t("stats.journeyStartValue", {
+                  date: new Date(`${stats.startDate}T00:00:00Z`).toLocaleDateString(
+                    lang === "ar" ? "ar-EG" : "en-GB",
+                    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
+                  ),
+                })}
+              </Text>
+            </View>
+            <Badge text={t("stats.journeyDays", { count: daysSince(stats.startDate) })} tone="primary" />
+          </Card>
+        ) : null}
 
         <View style={styles.kpiGrid}>
           <Kpi label={t("stats.currentStreak")} value={t("stats.daysShort", { count: stats.streak })} accent />
@@ -193,12 +218,36 @@ export function StatsScreen() {
         </Card>
 
         <Card style={{ marginTop: 16 }}>
-          <SectionTitle right={<AnimatedEmoji size={20}>🦉</AnimatedEmoji>}>{t("stats.insights")}</SectionTitle>
+          <SectionTitle right={<AnimatedEmoji size={20}>🔖</AnimatedEmoji>}>{t("stats.insights")}</SectionTitle>
           <Text style={{ color: c.textMuted, fontSize: 12.5, marginBottom: 12 }}>{t("stats.insightsHint")}</Text>
           <Button
             label={t("stats.askCoach")}
             onPress={() => openChat(t("stats.askCoach"))}
           />
+        </Card>
+
+        <Card style={{ marginTop: 16 }}>
+          <SectionTitle>{t("stats.milestones")}</SectionTitle>
+          <Text style={{ color: c.textMuted, fontSize: 12.5, marginBottom: 12 }}>{t("stats.milestonesHint")}</Text>
+          {BADGES.map((b) => {
+            const got = stats.streak >= b.days;
+            const meta = badgeText(b, lang);
+            return (
+              <View key={b.id} style={styles.milestoneRow}>
+                <Text style={{ fontSize: 17, opacity: got ? 1 : 0.5 }}>{got ? b.icon : "🔒"}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: got ? c.text : c.textMuted, fontSize: 13.5, fontWeight: "700" }}>
+                    {meta.title}
+                  </Text>
+                  <Text style={{ color: c.textFaint, fontSize: 11.5, marginTop: 1 }}>{meta.desc}</Text>
+                </View>
+                <Badge
+                  text={got ? t("stats.unlocked") : t("stats.inDays", { count: b.days - stats.streak })}
+                  tone={got ? "success" : "neutral"}
+                />
+              </View>
+            );
+          })}
         </Card>
 
         <Card style={{ marginTop: 16 }}>
@@ -253,4 +302,5 @@ const styles = StyleSheet.create({
   bookBarFill: { height: "100%", borderRadius: 999 },
   bookMinutes: { fontSize: 12, width: 42, textAlign: "right" },
   row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 7 },
+  milestoneRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 9 },
 });

@@ -118,11 +118,20 @@ worker will not register.
 - All user-facing strings go through `useI18n().t(...)`. Notifications store
   translation keys and resolve them at push time, so stored copy matches the
   language the reader saw.
+- Text renders through `app/src/components/Text.tsx`, not React Native's `Text`.
+  It picks IBM Plex Sans / IBM Plex Sans Arabic per language and per text run,
+  and folds `fontWeight` into the registered family (custom fonts do not
+  synthesise bold). Import `Text` / `TextInput` from `./Text`; `fontFor()` in
+  `theme/typography.ts` is for surfaces we do not render ourselves, such as
+  React Navigation's tab labels. Fonts load in `theme/useAppFonts.ts`.
 - Web deep links accept `?tab=Home|Library|Stats|Profile` for screenshots.
-- The mascot (`app/src/components/mascot/`) uses the ready-made owl sprite
-  sheets from the `page-mascot` skill — two 3x3 atlases (directions +
-  reactions) at `app/assets/mascots/owl-*.webp`. Do not hand-draw or regenerate
-  them; to swap characters, drop in another `<name>-{directions,reactions}.webp`
-  pair from https://koboyo.com/page-mascot/mascots/ and update `SHEETS`.
+- The mascot (`app/src/components/mascot/Mascot.tsx`) is Fahm, a living
+  bookmark drawn in SVG — no sprite assets, so it follows the theme palette and
+  stays crisp at any size. It gazes at the cursor via the pointer bus in
+  `mascot/pointer.ts` (the root view reports mouse/touch without claiming the
+  responder, so nothing underneath stops being pressable), plays discrete
+  direction and reaction states, and is the entry point to the AI chat sheet.
+  Gaze tracking is disabled when there is no fine pointer, and every animation
+  honours `prefers-reduced-motion` / the in-app setting.
 - Anything PWA-related (install prompt, theme-color, service worker, push) is
   web-guarded via `Platform.OS === "web"` so native builds are unaffected.

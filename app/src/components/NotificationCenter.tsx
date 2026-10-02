@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "./Text";
 import { SheetFrame } from "./SheetFrame";
 import { Button, Separator } from "./ui";
 import { useTheme } from "../theme/ThemeProvider";
@@ -10,7 +11,7 @@ const KIND_EMOJI: Record<string, string> = {
   reminder: "⏰",
   streak: "🔥",
   achievement: "🏅",
-  ai: "🦉",
+  ai: "🔖",
   system: "🔔",
 };
 

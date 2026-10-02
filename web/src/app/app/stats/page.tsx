@@ -70,7 +70,7 @@ export default function StatsPage() {
 
   return (
     <div>
-      <PageHeader title={t("stats.title")} subtitle={t("stats.subtitle")} />
+      <PageHeader title={t("stats.title")} subtitle={t("stats.subtitle")} accent="teal" />
 
       {/* Range picker: thumb-sized segmented control. */}
       <div className="inline-flex rounded-lg border border-border p-1">

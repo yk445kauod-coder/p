@@ -78,6 +78,7 @@ export default function HomePage() {
       <PageHeader
         title={t("app.name")}
         subtitle={greeting}
+        accent="amber"
         right={
           <Button size="sm" variant="outline" className="rounded-full" onClick={() => setLogOpen(true)}>
             {t("home.logSession")}

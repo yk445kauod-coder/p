@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { RefreshCw, ShieldCheck } from "lucide-react";
 import { useData } from "@/store/data";
 import { useAuth } from "@/store/auth";
 import { useI18n } from "@/i18n/provider";
@@ -19,6 +20,7 @@ import { RITUAL_DRINKS } from "@/data/types";
 import { HHMM, cn } from "@/lib/utils";
 import { PaywallDialog } from "@/components/paywall-dialog";
 import { syncAll } from "@/lib/sync";
+import { checkAdmin } from "@/lib/admin";
 
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
@@ -31,9 +33,25 @@ export default function ProfilePage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [admin, setAdmin] = useState(false);
 
   const isPro = preferences.plan === "pro";
   const dark = resolvedTheme === "dark";
+
+  // The console link is only rendered once the server confirms admin status.
+  useEffect(() => {
+    let cancelled = false;
+    if (!reader) {
+      setAdmin(false);
+      return;
+    }
+    checkAdmin()
+      .then((ok) => !cancelled && setAdmin(ok))
+      .catch(() => !cancelled && setAdmin(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [reader]);
 
   const runSync = async () => {
     setSyncing(true);
@@ -49,7 +67,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader title={t("profile.title")} />
+      <PageHeader title={t("profile.title")} accent="rose" />
 
       {/* Identity + plan. */}
       <Card>
@@ -75,7 +93,7 @@ export default function ProfilePage() {
 
       {/* Account + sync. Only meaningful when Supabase is configured. */}
       {cloudAvailable ? (
-        <Section title={t("profile.account")}>
+        <Section title={t("profile.account")} accent="indigo">
           <Card>
             <CardContent className="grid gap-3 p-4">
               {reader ? (
@@ -84,6 +102,15 @@ export default function ProfilePage() {
                     <RefreshCw className={cn("mr-1.5 h-4 w-4", syncing && "animate-spin")} aria-hidden />
                     {syncing ? t("common.loading") : t("profile.signIn")}
                   </Button>
+                  {/* Only rendered once the server confirms the caller is an admin. */}
+                  {admin ? (
+                    <Button variant="secondary" className="w-full" asChild>
+                      <Link href="/admin">
+                        <ShieldCheck className="mr-1.5 h-4 w-4" aria-hidden />
+                        Admin console
+                      </Link>
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost"
                     className="w-full text-destructive hover:text-destructive"
@@ -100,7 +127,7 @@ export default function ProfilePage() {
         </Section>
       ) : null}
 
-      <Section title={t("profile.appearance")}>
+      <Section title={t("profile.appearance")} accent="violet">
         <Card>
           <CardContent className="divide-y divide-border p-4">
             <Row label={t("profile.darkMode")}>
@@ -135,7 +162,7 @@ export default function ProfilePage() {
         </div>
       </Section>
 
-      <Section title={t("profile.readingGoal")}>
+      <Section title={t("profile.readingGoal")} accent="teal">
         <Card>
           <CardContent className="grid gap-4 p-4">
             <p className="text-sm text-muted-foreground">
@@ -187,7 +214,7 @@ export default function ProfilePage() {
         </Card>
       </Section>
 
-      <Section title={t("profile.reviewDays")}>
+      <Section title={t("profile.reviewDays")} accent="indigo">
         <Card>
           <CardContent className="grid gap-3 p-4">
             <p className="text-xs text-muted-foreground">{t("profile.reviewDaysHint")}</p>
@@ -206,7 +233,7 @@ export default function ProfilePage() {
         </Card>
       </Section>
 
-      <Section title={t("profile.restDays")}>
+      <Section title={t("profile.restDays")} accent="rose">
         <Card>
           <CardContent className="grid gap-3 p-4">
             <p className="text-xs text-muted-foreground">{t("profile.restDaysHint")}</p>
@@ -225,7 +252,7 @@ export default function ProfilePage() {
         </Card>
       </Section>
 
-      <Section title={t("profile.ritual")}>
+      <Section title={t("profile.ritual")} accent="violet">
         <Card>
           <CardContent className="grid gap-4 p-4">
             <div className="flex flex-wrap gap-2">
@@ -250,7 +277,7 @@ export default function ProfilePage() {
         </Card>
       </Section>
 
-      <Section title={t("profile.yourNumbers")}>
+      <Section title={t("profile.yourNumbers")} accent="amber">
         <Card>
           <CardContent className="divide-y divide-border p-4">
             {[

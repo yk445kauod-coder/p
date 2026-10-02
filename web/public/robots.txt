@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# The admin console is not for crawlers or for anyone who is not the project
+# administrator. It is gated server-side, but there is no reason to index it.
+Disallow: /admin
+Disallow: /admin/

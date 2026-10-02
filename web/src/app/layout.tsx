@@ -43,6 +43,8 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
+    // The admin console must never be indexed. It is also gated server-side.
+    robots: "noindex, nofollow",
   },
   openGraph: {
     type: "website",

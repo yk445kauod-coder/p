@@ -15,16 +15,25 @@ export function PageHeader({
   title,
   subtitle,
   right,
+  accent,
 }: {
   title: string;
   subtitle?: string;
   right?: ReactNode;
+  accent?: Accent;
 }) {
   return (
-    <header className="mb-5 flex items-start justify-between gap-3">
+    <header className="mb-6 flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p> : null}
+        <h1 className="text-display truncate text-[28px] leading-tight sm:text-[34px]">{title}</h1>
+        {subtitle ? (
+          <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+            {accent ? (
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT[accent])} aria-hidden />
+            ) : null}
+            <span className="truncate">{subtitle}</span>
+          </p>
+        ) : null}
       </div>
       {right ? <div className="shrink-0">{right}</div> : null}
     </header>
@@ -99,6 +108,14 @@ export function Stat({
 
 /** Accent names shared by the tinted blocks below. */
 export type Accent = "amber" | "teal" | "violet" | "rose" | "indigo";
+
+const DOT: Record<Accent, string> = {
+  amber: "bg-primary",
+  teal: "bg-teal",
+  violet: "bg-violet",
+  rose: "bg-rose",
+  indigo: "bg-indigo",
+};
 
 const TILE: Record<Accent, { icon: string; value: string; ring: string }> = {
   amber: { icon: "bg-primary-soft text-primary-strong", value: "text-primary-strong", ring: "border-primary/20" },

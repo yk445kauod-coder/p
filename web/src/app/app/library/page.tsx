@@ -71,6 +71,7 @@ export default function LibraryPage() {
     <div>
       <PageHeader
         title={t("library.title")}
+        accent="violet"
         subtitle={
           books.length === 1
             ? t("library.count", { count: books.length })

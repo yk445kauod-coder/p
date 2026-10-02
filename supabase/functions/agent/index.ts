@@ -11,22 +11,56 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const BASE_URL = Deno.env.get("AI_BASE_URL") ?? "https://openrouter.ai/api/v1";
+const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
-const PROVIDER_KEY =
-  Deno.env.get("AI_API_KEY") ??
-  Deno.env.get("OPENROUTER_API_KEY") ??
-  Deno.env.get("OPENAI_API_KEY") ??
-  "";
+// The admin console stores keys in Supabase Vault, so this reads them through
+// the service-role-only `get_app_secret` function. Environment variables remain
+// the fallback, which keeps a fresh deploy working before anything is set in the
+// console. Resolved once per request, not at module load: a key rotated in the
+// console must take effect without a redeploy.
+type ServiceClient = SupabaseClient;
 
-// Free-tier models first so the coach keeps working when the account has no
-// paid credits; the paid ids are a last resort for better quality.
-const MODELS = [
-  Deno.env.get("AI_MODEL"),
-  "nvidia/nemotron-3.5-lightning:free",
-  "inclusionai/ling-3.0-flash-sante:free",
-  "openai/gpt-4o-mini",
-].filter(Boolean) as string[];
+async function readSecret(service: ServiceClient, key: string): Promise<string | null> {
+  try {
+    const { data, error } = await service.rpc("get_app_secret", { p_key: key });
+    if (error) return null;
+    return typeof data === "string" && data.length ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveConfig(service: ServiceClient): Promise<{
+  providerKey: string;
+  baseUrl: string;
+  models: string[];
+}> {
+  const [key, model, baseUrl] = await Promise.all([
+    readSecret(service, "OPENROUTER_API_KEY"),
+    readSecret(service, "AI_MODEL"),
+    readSecret(service, "AI_BASE_URL"),
+  ]);
+
+  const providerKey =
+    key ??
+    Deno.env.get("AI_API_KEY") ??
+    Deno.env.get("OPENROUTER_API_KEY") ??
+    Deno.env.get("OPENAI_API_KEY") ??
+    "";
+
+  const resolvedBase = baseUrl ?? Deno.env.get("AI_BASE_URL") ?? DEFAULT_BASE_URL;
+
+  // Free-tier models first so the coach keeps working when the account has no
+  // paid credits; the paid ids are a last resort for better quality.
+  const models = [
+    model ?? Deno.env.get("AI_MODEL"),
+    "nvidia/nemotron-3.5-lightning:free",
+    "inclusionai/ling-3.0-flash-sante:free",
+    "openai/gpt-4o-mini",
+  ].filter(Boolean) as string[];
+
+  return { providerKey, baseUrl: resolvedBase, models };
+}
 
 const MAX_STEPS = 4;
 
@@ -168,13 +202,17 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function callModel(messages: unknown[], tools: unknown[]): Promise<any> {
+async function callModel(
+  messages: unknown[],
+  tools: unknown[],
+  config: { providerKey: string; baseUrl: string; models: string[] },
+): Promise<any> {
   let lastError = "ai_unavailable";
-  for (const model of MODELS) {
-    const res = await fetch(`${BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+  for (const model of config.models) {
+    const res = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${PROVIDER_KEY}`,
+        Authorization: `Bearer ${config.providerKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://tracebook.app",
         "X-Title": "TraceBook",
@@ -352,7 +390,9 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  if (!PROVIDER_KEY) return json({ error: "ai_not_configured" }, 500);
+  // Keys come from the admin console's vault, falling back to env vars.
+  const config = await resolveConfig(service);
+  if (!config.providerKey) return json({ error: "ai_not_configured" }, 500);
 
   let body: any;
   try {
@@ -389,9 +429,9 @@ Deno.serve(async (req) => {
 
   async function runLoop(): Promise<{ content: string; model: string }> {
     let content = "";
-    let model = MODELS[0];
+    let model = config.models[0];
     for (let step = 0; step < MAX_STEPS; step++) {
-      const { message, model: used } = await callModel(convo, tools);
+      const { message, model: used } = await callModel(convo, tools, config);
       model = used;
       const calls = message?.tool_calls ?? [];
       if (!calls.length) {
@@ -430,6 +470,7 @@ Deno.serve(async (req) => {
           { role: "user", content: "Summarise what you found for the reader in a short, warm reply." },
         ],
         [],
+        config,
       );
       content = (message?.content ?? "").trim();
       model = used;

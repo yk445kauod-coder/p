@@ -20,8 +20,18 @@ const config = {
 		},
 		extend: {
 			fontFamily: {
-				sans: ["var(--font-latin)", "system-ui", "sans-serif"],
-				arabic: ["var(--font-arabic)", "system-ui", "sans-serif"],
+				// Latin leads, Arabic falls back per glyph, so a mixed string renders
+				// each script in its own IBM Plex cut without branching on language.
+				sans: [
+					"var(--font-latin)",
+					"var(--font-arabic)",
+					"system-ui",
+					"-apple-system",
+					"sans-serif",
+				],
+				arabic: ["var(--font-arabic)", "var(--font-latin)", "system-ui", "sans-serif"],
+				serif: ["var(--font-arabic)", "Georgia", "serif"],
+				mono: ["ui-monospace", "SFMono-Regular", "monospace"],
 			},
 			colors: {
 				border: "hsl(var(--border))",

@@ -1,14 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Kufi_Arabic } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/i18n/provider";
 import { AppProviders } from "@/store/providers";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-latin", display: "swap" });
-// Arabic copy renders in a matching geometric sans so mixed en/ar sits on one rhythm.
-const kufi = Noto_Kufi_Arabic({ subsets: ["arabic"], variable: "--font-arabic", display: "swap" });
+/**
+ * IBM Plex Sans for Latin, IBM Plex Sans Arabic for Arabic.
+ *
+ * They are the same superfamily, so mixed en/ar copy sits on one rhythm and the
+ * same weight scale — which matters because the two languages share a layout.
+ * Google Fonts serves them as static cuts rather than variables, so every weight
+ * the UI actually uses has to be listed explicitly.
+ */
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-latin",
+  display: "swap",
+});
+
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "TraceBook — turn reading into a habit you can see",
@@ -50,7 +68,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${kufi.variable} font-sans`}>
+      <body className={`${plexSans.variable} ${plexArabic.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <I18nProvider>
             <AppProviders>

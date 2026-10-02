@@ -169,6 +169,14 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    /* Latin first, Arabic as the per-glyph fallback: a mixed string like
+       "TraceBook · قرايتك" renders each script in its own Plex cut without any
+       markup having to branch on language. */
+    font-family: var(--font-latin), var(--font-arabic), system-ui, -apple-system, sans-serif;
+  }
+  /* In RTL the Arabic cut leads, so line metrics match the script being read. */
+  html[dir="rtl"] {
+    font-family: var(--font-arabic), var(--font-latin), system-ui, -apple-system, sans-serif;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -224,6 +232,19 @@
 }
 
 @layer utilities {
+  /* IBM Plex is a little wide by default; headings tighten up, body stays put. */
+  .text-display {
+    @apply font-bold tracking-tight;
+    font-feature-settings: "ss01";
+  }
+  .text-heading {
+    @apply font-semibold tracking-tight;
+  }
+  /* Tabular figures so counters and dates never jitter as they change. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Respect the notch and rounded corners on modern phones. */
   .pt-safe {
     padding-top: env(safe-area-inset-top);

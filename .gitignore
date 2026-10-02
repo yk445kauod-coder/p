@@ -52,3 +52,9 @@ __pycache__/
 
 # agent scratch space
 .agents_tmp/
+
+# Next.js app
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts

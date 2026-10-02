@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TraceBook design tokens.
+
+   A warm, high-contrast reading palette: near-black "ink" and soft "paper"
+   surfaces with a single confident amber accent. Values are HSL triplets so
+   Tailwind can compose opacity, and every colour is referenced through a
+   semantic name — components never hardcode a hue.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    --background: 40 33% 98%;
+    --foreground: 24 12% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 24 12% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 12% 10%;
+
+    --primary: 32 95% 44%;
+    --primary-foreground: 40 60% 99%;
+
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 24 12% 16%;
+
+    --muted: 40 20% 95%;
+    --muted-foreground: 25 8% 45%;
+
+    --accent: 40 25% 93%;
+    --accent-foreground: 24 12% 16%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 40 60% 99%;
+
+    --success: 152 55% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 35 16% 88%;
+    --input: 35 16% 88%;
+    --ring: 32 95% 44%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 24 10% 6%;
+    --foreground: 40 25% 96%;
+
+    --card: 24 9% 9%;
+    --card-foreground: 40 25% 96%;
+
+    --popover: 24 9% 9%;
+    --popover-foreground: 40 25% 96%;
+
+    --primary: 36 92% 56%;
+    --primary-foreground: 24 40% 8%;
+
+    --secondary: 24 8% 15%;
+    --secondary-foreground: 40 25% 96%;
+
+    --muted: 24 8% 15%;
+    --muted-foreground: 35 10% 62%;
+
+    --accent: 24 8% 17%;
+    --accent-foreground: 40 25% 96%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 40 25% 96%;
+
+    --success: 152 48% 48%;
+    --success-foreground: 24 40% 8%;
+
+    --border: 24 8% 18%;
+    --input: 24 8% 18%;
+    --ring: 36 92% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Keep the bottom nav clear of the iOS home indicator. */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Tap targets should never trigger iOS zoom. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@layer utilities {
+  /* Respect the notch and rounded corners on modern phones. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Room for the fixed bottom nav on mobile. */
+  .pb-nav {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

@@ -7,7 +7,7 @@ offline-first web app (PWA).
 ## Layout
 
 ```
-web/       Next.js 14 app — landing page at /, the reader at /app/
+web/       Next.js 14 app — landing at /, the reader at /app/, admin at /admin
 supabase/  Edge functions: agent/ (AI coach), push/ (Web Push delivery)
 ```
 
@@ -59,7 +59,47 @@ the model provider key, talks to Postgres as the signed-in user (so RLS still
 applies), and can call tools that read or write that reader's own data. Nothing
 secret ever reaches the browser bundle.
 
+Provider config is resolved **per request** by `resolveConfig()`: it reads
+`OPENROUTER_API_KEY` / `AI_MODEL` / `AI_BASE_URL` from the admin vault first and
+falls back to environment variables. That is deliberate — a key rotated in the
+admin console takes effect immediately, with no redeploy.
+
 `supabase/functions/push/index.ts` delivers Web Push notifications.
+
+## Admin console
+
+`/admin` is a server-authorised console for managing readers and storing API
+keys. It is a normal static route, so the gate is entirely in the database.
+
+**One authorisation primitive.** `public.is_admin(uid)` checks membership of
+`public.admins`. Every privileged function is `SECURITY DEFINER`, re-checks it,
+and raises `42501` otherwise. The browser never decides who is an admin, so
+reaching `/admin` without the role renders a warning and nothing else.
+
+**Bootstrap.** `admin_claim()` makes the first authenticated caller the admin and
+then returns `false forever` — a stranger can never self-promote on a live
+project. Call it once from `/admin` after signing in.
+
+**Keys live in Supabase Vault.** `admin_set_secret()` writes the value into
+`vault.secrets` (encrypted at rest) and stores only a registry row in
+`public.app_secrets` mapping name → vault id. `admin_list_secrets()` therefore
+never returns a value; reading one requires the separate, audited
+`admin_reveal_secret()`. `get_app_secret()` is the server-side path and is
+granted to `service_role` only.
+
+**Everything privileged is audited.** `public.admin_audit` records claim,
+set_plan, delete_user, set_secret, reveal_secret and delete_secret.
+
+**Anonymous callers are revoked outright.** The admin RPCs are granted to
+`authenticated` only, so an anon key gets a 401 from PostgREST rather than
+relying on the in-function check alone.
+
+To add a new admin action: write a `SECURITY DEFINER` function that starts with
+the `is_admin()` guard, `revoke all ... from public, anon`, `grant execute ... to
+authenticated`, and append to `admin_audit`. Add a typed wrapper in
+`web/src/lib/admin.ts`.
+
+The route is `noindex` and disallowed in `robots.txt`.
 
 ## i18n
 

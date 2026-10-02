@@ -1,17 +1,26 @@
 # TraceBook
 
 Reading-habit tracker shipped as an installable, mobile-first web app (PWA).
-Expo/React Native app exports to `react-native-web`; Supabase provides Postgres,
-auth and edge functions. There is no Android build — the APK was cancelled.
+
+There are **two front-ends in this repo**, on separate branches:
+
+| Branch | Front-end | Status |
+| --- | --- | --- |
+| `feat/tracebook-next` | `web/` — Next.js 14 + shadcn/ui + Tailwind | **current** |
+| `feat/tracebook-pwa-and-landing` | `app/` — Expo/React Native → `react-native-web` | previous |
+
+Both share the same Supabase project (`rxjwygaemyxxcegiiuev`), the same domain
+model and the same two locales. The Expo app is kept only as a reference; new
+work goes into `web/`.
 
 ## Layout
 
 ```
-app/       Expo React Native app (exports to an installable PWA via react-native-web)
+web/       Next.js app: landing at /, the reader at /app/ (static export → Cloudflare Pages)
+app/       Expo React Native app from the previous branch (reference only)
 supabase/  Edge functions: agent/ (AI coach), push/ (Web Push delivery)
-landing/   Static marketing page (also holds `_headers` and the app screenshots)
-scripts/   build_site.sh - builds the whole web surface into site/
-site/      Build output: landing page at /, PWA at /app/ (git-ignored)
+landing/   Static marketing page used by the previous branch
+scripts/   build_site.sh - builds the previous branch's web surface into site/
 ```
 
 ## Data & auth
@@ -54,7 +63,62 @@ calls the `push` function once per timezone so each reader is reminded at their
 local `notify_reminder_time`. The function URL and cron secret live in the
 private `private.app_config` table (not exposed through the API).
 
-## App
+## Web app (`web/`) — current
+
+```bash
+cd web
+npx next build          # typecheck + static export into out/
+npx next dev            # local dev server
+npx vitest              # unit tests
+npx next lint           # lint
+```
+
+`web/.env.local` holds only publishable values (`NEXT_PUBLIC_*`): the Supabase
+URL and anon key. With neither set the app still runs — it is local-first and
+only needs Supabase for cross-device sync.
+
+### How it is put together
+
+- **Local-first.** Every read and write goes through Dexie (`src/db.ts`), so the
+  UI is instant and works offline. `useData()` in `src/store/data.ts` wraps Dexie
+  in `useLiveQuery`, so any screen re-renders the moment a row changes.
+- **Sync is a mirror, not the source of truth.** `src/lib/sync.ts` pushes local
+  rows to Supabase and pulls the server copy back, for signed-in readers only. It
+  maps the app's camelCase model onto the Postgres schema the Expo app already
+  used — note `reading_sessions.started_at` ↔ `day`, and
+  `daily_entries.entry_date` ↔ `day`.
+- **The domain is pure.** `src/lib/reading.ts` holds the streak maths, the plan
+  projection and the badge table. Nothing there touches React or storage, which
+  is what makes it cheap to test.
+- **No server runtime.** `next.config.mjs` sets `output: "export"`, so the whole
+  app is static and deploys to Cloudflare Pages. Anything needing a secret (the
+  AI coach, Stripe) must live in a Supabase edge function rather than a Next API
+  route — do not add `src/app/api/*`.
+
+### Mobile first
+
+Mobile is the primary target, desktop is the adaptation:
+
+- `src/components/bottom-nav.tsx` renders a fixed bottom tab bar on phones and
+  the same links as a left rail from `md` up.
+- Safe areas come from `env(safe-area-inset-*)` via the `pt-safe` / `pb-safe` /
+  `pb-nav` utilities in `globals.css`; `viewportFit: "cover"` is set in the root
+  layout, without which those insets do nothing on iOS.
+- Inputs are forced to 16px so iOS never zooms on focus.
+- Tap targets are at least `min-h-9` (36px), usually 44px+.
+- Filter strips scroll horizontally rather than wrapping, so options stay
+  thumb-reachable.
+
+### Brand assets
+
+```bash
+cd web && python3 scripts/make_icons.py   # needs pillow
+```
+
+Renders `icon512_rounded.png`, `icon512_maskable.png`, `apple-touch-icon.png`
+and `favicon-64.png` into `public/` from `app/assets/logo-mark.png`.
+
+## App (`app/`) — previous branch
 
 ```bash
 cd app
@@ -87,21 +151,37 @@ Renders `icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`
 
 ## i18n
 
-`app/src/i18n/` holds the copy deck. Two locales: `en` and `ar` (Egyptian
-dialect). Keys are flat (`home.greetingMorning`), placeholders are `{name}`. The
-two dictionaries must stay in lockstep — `TranslationKey` is derived from `en`,
-so a key missing from `ar` is a type error. The language choice persists in
-settings; RTL needs an app reload because `I18nManager` resolves direction at
-startup.
+Two locales ship, in both front-ends: `en` and Egyptian-dialect `ar`. Keys are
+flat (`home.greetingMorning`) and placeholders are `{name}`.
+
+- Web: `web/src/i18n/{en,ar}.ts`, with `TranslationKey` derived from `en` so a
+  key missing from `ar` is a type error. `provider.tsx` also syncs
+  `<html lang>` and `<html dir>`, which is what makes RTL work.
+- App: `app/src/i18n/`, same rules; RTL needs a reload because `I18nManager`
+  resolves direction at startup.
+
+Write the Arabic in Egyptian colloquial (بتقرأ / خلّي / على طول), not MSA.
 
 ## Distribution
 
-The primary distribution channel is the installable PWA:
+Live at:
 
 - Landing page: https://tracebook.pages.dev/
-- Web app / PWA: https://tracebook.pages.dev/app/
+- Reader / PWA: https://tracebook.pages.dev/app/
 
-Build and deploy the whole surface with one command:
+### Current (Next.js)
+
+`web/` exports statically, so deploying is just a build and an upload:
+
+```bash
+cd web && npx next build          # -> web/out
+npx wrangler pages deploy out --project-name=tracebook --branch=main
+```
+
+Cloudflare Pages picks the custom domain up from the project; `tracebook.pages.dev`
+is the production alias.
+
+### Previous (Expo)
 
 ```bash
 ./scripts/build_site.sh                       # -> site/
@@ -126,16 +206,33 @@ still matches its bytes. Without this the fonts 404, `useFonts` never resolves,
 and the deployed app hangs on its splash forever — even though the same build
 works when served locally.
 
-Preview the built site locally with `python3 -m http.server -d site` — the app
-must be served from `/app/`, not opened as a `file://` path, or the service
+Preview either build locally with `python3 -m http.server -d <out|site>` — the
+app must be served over HTTP, not opened as a `file://` path, or the service
 worker will not register.
 
 ## Conventions
 
+### Web (`web/`) — current
+
+- Colours come from the CSS variables in `globals.css` (`bg-background`,
+  `text-muted-foreground`, `border-border`, `text-primary`…). Never hardcode a
+  hue; both themes are defined by swapping those variables.
+- Build UI from the shadcn primitives in `src/components/ui/`, and the shared
+  layout blocks in `src/components/page.tsx` (`PageHeader`, `Section`, `Stat`,
+  `EmptyState`) rather than repeating Tailwind chains.
+- All copy goes through `useI18n().t(...)`; add every new key to **both**
+  `src/i18n/en.ts` and `src/i18n/ar.ts`. `TranslationKey` is derived from `en`,
+  so a missing Arabic key fails the build.
+- Writes go through `useData()`; never touch Dexie from a component.
+- Keep the app mobile-first: one column, `pb-nav` on screens with the tab bar,
+  and no layout that needs a horizontal scroll on a 360px viewport.
+
+### App (`app/`) — previous branch
+
 - Screens read theme through `useTheme()`, never hardcode colours. The palette
-  is the Gen-Z token set in `theme/theme.ts` (saturated violet/pink/lime/cyan,
-  a `premium` gold pair for the paid tier, plus `elevation`, `gradient`,
-  `container`, `breakpoints` and `zIndex`).
+  lives in `theme/theme.ts` (violet/pink/lime/cyan ramps, a `premium` gold pair
+  for the paid tier, plus `elevation`, `gradient`, `container`, `breakpoints`
+  and `zIndex`).
 - Every screen renders inside `components/layout.tsx`'s `Screen`, which centres
   content at `theme.container.content` and owns the safe-area padding. Use
   `Section` for vertical rhythm and `ChromeSlot` for anything absolutely

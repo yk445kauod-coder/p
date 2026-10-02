@@ -46,19 +46,16 @@ interface EntitlementsValue {
 }
 
 const KEY = "tracebook.usage.v1";
+const PLAN_KEY = "tracebook.plan.v1";
 const EntitlementsContext = createContext<EntitlementsValue | null>(null);
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 export function EntitlementsProvider({ children }: { children: React.ReactNode }) {
   const { user, offline } = useAuth();
-  const [cloudPlan, setCloudPlan] = useState<Plan>("free");
+  const [plan, setPlanState] = useState<Plan>("free");
   const [usage, setUsage] = useState<Usage>({ day: todayKey(), aiMessages: 0 });
   const [ready, setReady] = useState(false);
-
-  // Guests and signed-out readers are always free; the cloud value only applies
-  // to a real session, so no effect has to reset it.
-  const plan: Plan = !user || offline ? "free" : cloudPlan;
 
   // Local usage counter, reset whenever the calendar day rolls over.
   useEffect(() => {
@@ -73,13 +70,23 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
       .finally(() => setReady(true));
   }, []);
 
-  // Pull the plan from the cloud profile for signed-in readers.
+  // Restore a locally unlocked plan (guests have no cloud profile to read).
+  useEffect(() => {
+    AsyncStorage.getItem(PLAN_KEY)
+      .then((raw) => {
+        if (raw === "pro" || raw === "free") setPlanState(raw);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Seed the plan from the cloud profile for signed-in readers. A guest keeps
+  // whatever local plan they unlocked, since there is no profile to read.
   useEffect(() => {
     if (!user || offline) return;
     let cancelled = false;
     fetchProfile()
       .then((p) => {
-        if (!cancelled && p && (p.plan === "pro" || p.plan === "free")) setCloudPlan(p.plan);
+        if (!cancelled && p && (p.plan === "pro" || p.plan === "free")) setPlanState(p.plan);
       })
       .catch(() => undefined);
     return () => {
@@ -98,11 +105,12 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
 
   const setPlan = useCallback(
     async (next: Plan) => {
-      setCloudPlan(next);
+      setPlanState(next);
+      AsyncStorage.setItem(PLAN_KEY, next).catch(() => undefined);
       try {
         await updateProfile({ plan: next });
       } catch {
-        /* offline: the local value still unlocks the UI */
+        /* offline/guest: the local value still unlocks the UI */
       }
     },
     [],

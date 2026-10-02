@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import { AuthProvider } from "@/store/auth";
 
 /**
@@ -13,6 +14,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       {children}
+      <ServiceWorkerRegistrar />
       <Toaster richColors position="top-center" />
     </AuthProvider>
   );

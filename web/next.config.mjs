@@ -9,9 +9,25 @@ import withPWAInit from "@ducanh2912/next-pwa";
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  customWorkerSrc: "./src/service-worker",
   register: true,
+  // The reader is offline-first, so the shell must precache even on a cold visit.
+  cacheStartUrl: true,
+  dynamicStartUrl: false,
   reloadOnOnline: true,
+  workboxOptions: {
+    // Cache navigations and static assets; never cache Supabase traffic.
+    runtimeCaching: [
+      {
+        urlPattern: /\/app/,
+        handler: "NetworkFirst",
+        options: { cacheName: "tracebook-pages", networkTimeoutSeconds: 5 },
+      },
+      {
+        urlPattern: /^https:\/\/[a-z0-9]+\.supabase\.co\/.*/i,
+        handler: "NetworkOnly",
+      },
+    ],
+  },
 });
 
 export default withPWA({
@@ -22,3 +38,4 @@ export default withPWA({
   images: { unoptimized: true },
   trailingSlash: true,
 });
+

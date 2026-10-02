@@ -6,20 +6,12 @@ node_modules/
 # build output
 build/
 dist/
-web-build/
-.expo/
-.expo-shared/
 *.tsbuildinfo
 
-# android / gradle
-app/android/.gradle/
-app/android/build/
-app/android/app/build/
-app/android/local.properties
-.gradle/
-*.apk
-*.aab
-*.keystore
+# next.js
+.next/
+out/
+next-env.d.ts
 
 # cloudflare
 .wrangler/
@@ -39,9 +31,6 @@ yarn-error.*
 .idea/
 .vscode/
 *.orig.*
-
-# built site (Cloudflare Pages output)
-site/
 
 # Supabase CLI local state (linked project ref, cache)
 supabase/.temp/

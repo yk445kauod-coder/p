@@ -5,79 +5,161 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    TraceBook design tokens.
 
-   A warm, high-contrast reading palette: near-black "ink" and soft "paper"
-   surfaces with a single confident amber accent. Values are HSL triplets so
-   Tailwind can compose opacity, and every colour is referenced through a
-   semantic name — components never hardcode a hue.
+   A warm reading palette with a full accent ramp rather than a single hue:
+   amber for action, teal for progress, violet for reflection, rose for
+   milestones and indigo for the coach. Values are HSL triplets so Tailwind can
+   compose opacity, and every colour is reached through a semantic name — no
+   component hardcodes a hue.
+
+   Each accent ships as three stops (`--x`, `--x-soft`, `--x-strong`) plus a
+   `--x-foreground` for text placed on top of it.
    ──────────────────────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    --background: 40 33% 98%;
-    --foreground: 24 12% 10%;
+    /* Surfaces — a warm paper stack, slightly tinted so cards lift off the page. */
+    --background: 40 38% 98%;
+    --background-2: 38 44% 96%;
+    --foreground: 24 14% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 24 12% 10%;
+    --card: 40 50% 99.5%;
+    --card-foreground: 24 14% 11%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 24 12% 10%;
+    --popover: 40 50% 99.5%;
+    --popover-foreground: 24 14% 11%;
 
-    --primary: 32 95% 44%;
+    /* Amber — primary action, streaks. */
+    --primary: 28 92% 47%;
+    --primary-soft: 34 100% 94%;
+    --primary-strong: 24 90% 38%;
     --primary-foreground: 40 60% 99%;
 
-    --secondary: 40 20% 94%;
-    --secondary-foreground: 24 12% 16%;
+    /* Teal — progress, reading time, positive completion. */
+    --teal: 174 62% 34%;
+    --teal-soft: 174 55% 93%;
+    --teal-strong: 176 64% 25%;
+    --teal-foreground: 0 0% 100%;
 
-    --muted: 40 20% 95%;
-    --muted-foreground: 25 8% 45%;
+    /* Violet — reflection, review days, insights. */
+    --violet: 262 60% 52%;
+    --violet-soft: 264 70% 95%;
+    --violet-strong: 262 58% 42%;
+    --violet-foreground: 0 0% 100%;
 
-    --accent: 40 25% 93%;
-    --accent-foreground: 24 12% 16%;
+    /* Rose — milestones, celebrations. */
+    --rose: 342 72% 50%;
+    --rose-soft: 342 85% 95%;
+    --rose-strong: 342 70% 40%;
+    --rose-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 48%;
-    --destructive-foreground: 40 60% 99%;
+    /* Indigo — the AI coach. */
+    --indigo: 232 62% 56%;
+    --indigo-soft: 232 80% 96%;
+    --indigo-strong: 232 58% 45%;
+    --indigo-foreground: 0 0% 100%;
 
-    --success: 152 55% 36%;
+    /* Semantic. */
+    --success: 158 62% 34%;
+    --success-soft: 158 55% 93%;
     --success-foreground: 0 0% 100%;
 
-    --border: 35 16% 88%;
-    --input: 35 16% 88%;
-    --ring: 32 95% 44%;
+    --warning: 38 92% 48%;
+    --warning-soft: 40 95% 94%;
+    --warning-foreground: 24 40% 10%;
 
-    --radius: 0.75rem;
+    --destructive: 0 72% 48%;
+    --destructive-soft: 0 85% 96%;
+    --destructive-foreground: 40 60% 99%;
+
+    /* Neutrals. */
+    --secondary: 38 30% 94%;
+    --secondary-foreground: 24 14% 16%;
+
+    --muted: 38 26% 95%;
+    --muted-foreground: 25 10% 44%;
+
+    --accent: 36 40% 93%;
+    --accent-foreground: 24 14% 16%;
+
+    --border: 34 22% 88%;
+    --border-strong: 32 24% 78%;
+    --input: 34 22% 88%;
+    --ring: 28 92% 47%;
+
+    --radius: 0.875rem;
+
+    /* Elevation — warm, low-contrast shadows that read as depth, not glow. */
+    --shadow-sm: 0 1px 2px 0 hsl(24 20% 12% / 0.05);
+    --shadow-md: 0 4px 14px -4px hsl(24 20% 12% / 0.12);
+    --shadow-lg: 0 14px 40px -12px hsl(24 20% 12% / 0.2);
   }
 
   .dark {
-    --background: 24 10% 6%;
-    --foreground: 40 25% 96%;
+    /* Surfaces — near-black with a warm bias so it feels like a lamp-lit page. */
+    --background: 24 12% 6%;
+    --background-2: 24 12% 8.5%;
+    --foreground: 40 30% 96%;
 
-    --card: 24 9% 9%;
-    --card-foreground: 40 25% 96%;
+    --card: 24 11% 10%;
+    --card-foreground: 40 30% 96%;
 
-    --popover: 24 9% 9%;
-    --popover-foreground: 40 25% 96%;
+    --popover: 24 11% 11%;
+    --popover-foreground: 40 30% 96%;
 
-    --primary: 36 92% 56%;
-    --primary-foreground: 24 40% 8%;
+    --primary: 32 94% 58%;
+    --primary-soft: 28 40% 16%;
+    --primary-strong: 36 96% 68%;
+    --primary-foreground: 24 45% 8%;
 
-    --secondary: 24 8% 15%;
-    --secondary-foreground: 40 25% 96%;
+    --teal: 172 58% 52%;
+    --teal-soft: 174 35% 14%;
+    --teal-strong: 172 62% 64%;
+    --teal-foreground: 176 60% 8%;
 
-    --muted: 24 8% 15%;
-    --muted-foreground: 35 10% 62%;
+    --violet: 262 78% 70%;
+    --violet-soft: 262 32% 17%;
+    --violet-strong: 262 84% 80%;
+    --violet-foreground: 262 50% 10%;
 
-    --accent: 24 8% 17%;
-    --accent-foreground: 40 25% 96%;
+    --rose: 342 82% 66%;
+    --rose-soft: 342 32% 16%;
+    --rose-strong: 342 88% 76%;
+    --rose-foreground: 342 50% 10%;
 
-    --destructive: 0 62% 52%;
-    --destructive-foreground: 40 25% 96%;
+    --indigo: 232 88% 72%;
+    --indigo-soft: 232 32% 18%;
+    --indigo-strong: 232 92% 82%;
+    --indigo-foreground: 232 50% 10%;
 
-    --success: 152 48% 48%;
-    --success-foreground: 24 40% 8%;
+    --success: 158 58% 50%;
+    --success-soft: 158 32% 14%;
+    --success-foreground: 158 60% 8%;
 
-    --border: 24 8% 18%;
-    --input: 24 8% 18%;
-    --ring: 36 92% 56%;
+    --warning: 40 92% 60%;
+    --warning-soft: 38 34% 15%;
+    --warning-foreground: 40 50% 9%;
+
+    --destructive: 0 68% 60%;
+    --destructive-soft: 0 30% 16%;
+    --destructive-foreground: 0 40% 9%;
+
+    --secondary: 24 10% 15%;
+    --secondary-foreground: 40 30% 96%;
+
+    --muted: 24 10% 15%;
+    --muted-foreground: 34 12% 64%;
+
+    --accent: 24 10% 18%;
+    --accent-foreground: 40 30% 96%;
+
+    --border: 24 10% 19%;
+    --border-strong: 24 12% 28%;
+    --input: 24 10% 19%;
+    --ring: 32 94% 58%;
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 16px -4px hsl(0 0% 0% / 0.55);
+    --shadow-lg: 0 16px 44px -12px hsl(0 0% 0% / 0.7);
   }
 }
 
@@ -90,6 +172,13 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    /* A soft two-stop wash so the page has depth before any card is drawn. */
+    background-image: radial-gradient(
+      120% 80% at 50% -10%,
+      hsl(var(--primary) / 0.07),
+      transparent 60%
+    );
+    background-attachment: fixed;
     /* Keep the bottom nav clear of the iOS home indicator. */
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -98,6 +187,39 @@
   textarea,
   select {
     font-size: 16px !important;
+  }
+  /* One consistent focus treatment everywhere, keyboard-only. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* A card that lifts on hover — the one interactive surface treatment. */
+  .surface {
+    @apply rounded-2xl border border-border bg-card;
+    box-shadow: var(--shadow-sm);
+  }
+  .surface-hover {
+    @apply transition-all duration-200;
+  }
+  .surface-hover:hover {
+    border-color: hsl(var(--border-strong));
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  /* Small tinted pill used for status and categories. */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
   }
 }
 
@@ -123,5 +245,90 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Text gradients for headings. */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--primary-strong)),
+      hsl(var(--primary)),
+      hsl(var(--rose))
+    );
+  }
+  .text-gradient-coach {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, hsl(var(--indigo)), hsl(var(--violet)));
+  }
+
+  /* Surface gradients. */
+  .bg-hero {
+    background-image: linear-gradient(
+      145deg,
+      hsl(var(--primary) / 0.14),
+      hsl(var(--rose) / 0.1) 45%,
+      transparent 75%
+    );
+  }
+  .bg-coach {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--indigo) / 0.16),
+      hsl(var(--violet) / 0.12)
+    );
+  }
+  .bg-streak {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.2),
+      hsl(var(--warning) / 0.12)
+    );
+  }
+  .bg-mint {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--teal) / 0.16),
+      hsl(var(--success) / 0.1)
+    );
+  }
+
+  /* A hairline gradient rule used under section headers. */
+  .rule-gradient {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--border-strong)),
+      transparent
+    );
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-sm);
+  }
+  .shadow-lift {
+    box-shadow: var(--shadow-md);
+  }
+  .shadow-float {
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Skeleton shimmer for loading placeholders. */
+  .shimmer {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--accent)) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 }

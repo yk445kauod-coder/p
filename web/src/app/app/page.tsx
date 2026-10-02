@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Flame, Sparkles } from "lucide-react";
 import { useData } from "@/store/data";
 import { useI18n } from "@/i18n/provider";
-import { PageHeader, Section, Stat } from "@/components/page";
+import { PageHeader, Section, Stat, StatTile } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -86,11 +86,11 @@ export default function HomePage() {
       />
 
       {/* Hero: streak + today's goal, the two numbers that matter. */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-primary/20 bg-streak">
         <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div
-              className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary/10 text-2xl"
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary/15 text-2xl ring-1 ring-primary/25"
               aria-hidden
             >
               {stats.streak > 0 ? "🔥" : "🌱"}
@@ -128,19 +128,19 @@ export default function HomePage() {
       </Card>
 
       {/* The single primary action. */}
-      <Button size="lg" className="mt-4 w-full" onClick={() => setLogOpen(true)}>
+      <Button size="lg" className="mt-4 w-full shadow-lift" onClick={() => setLogOpen(true)}>
         {loggedToday ? `✓ ${t("home.loggedToday")}` : t("home.logSession")}
       </Button>
 
       {/* Current book + plan projection. */}
-      <Section title={t("home.shelfProgress")}>
+      <Section title={t("home.shelfProgress")} accent="teal">
         {primary ? (
-          <Card>
+          <Card className="surface-hover">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div
                   className="h-14 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: primary.coverColor ?? "hsl(var(--primary))" }}
+                  style={{ backgroundColor: primary.coverColor ?? "hsl(var(--teal))" }}
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
@@ -149,7 +149,7 @@ export default function HomePage() {
                     {primary.author ?? t("common.unknownAuthor")}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-teal-strong">
                   {Math.round(plan.percentDone * 100)}%
                 </span>
               </div>
@@ -170,10 +170,10 @@ export default function HomePage() {
       </Section>
 
       {/* Ritual cue. */}
-      <Section>
-        <Card>
+      <Section accent="violet">
+        <Card className="border-violet/20 bg-mint">
           <CardContent className="flex items-center gap-3 p-4">
-            <span className="text-xl" aria-hidden>
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-soft text-xl" aria-hidden>
               {ritualEmoji(ritual)}
             </span>
             <div className="min-w-0">
@@ -187,7 +187,11 @@ export default function HomePage() {
       </Section>
 
       {/* Activity. */}
-      <Section title={t("home.activity")} action={<span className="text-xs text-muted-foreground">{t("home.last30")}</span>}>
+      <Section
+        title={t("home.activity")}
+        accent="teal"
+        action={<span className="text-xs text-muted-foreground">{t("home.last30")}</span>}
+      >
         <Card>
           <CardContent className="p-4">
             <ActivityHeatmap days={stats.last30} />
@@ -198,6 +202,7 @@ export default function HomePage() {
       {/* Badges + quote, kept below the fold. */}
       <Section
         title={t("home.badges")}
+        accent="rose"
         action={
           <span className="text-xs text-muted-foreground">
             {t("home.badgesUnlocked", { count: unlocked.length, total: BADGES.length })}
@@ -214,14 +219,20 @@ export default function HomePage() {
                   <div
                     key={b.id}
                     className={
-                      "flex w-[4.5rem] shrink-0 flex-col items-center gap-1 rounded-xl border p-2 text-center " +
-                      (got ? "border-primary/40 bg-primary/5" : "border-border opacity-55")
+                      "flex w-[4.5rem] shrink-0 flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors " +
+                      (got ? "border-rose/30 bg-rose-soft" : "border-border bg-muted/40 opacity-55")
                     }
                   >
                     <span className="text-lg" aria-hidden>
                       {got ? b.icon : "🔒"}
                     </span>
-                    <span className="text-[11px] font-medium leading-tight">{meta.title}</span>
+                    <span
+                      className={
+                        "text-[11px] font-medium leading-tight " + (got ? "text-rose-strong" : "")
+                      }
+                    >
+                      {meta.title}
+                    </span>
                     <span className="text-[10px] text-muted-foreground">{b.days}d</span>
                   </div>
                 );
@@ -230,7 +241,12 @@ export default function HomePage() {
             {next ? (
               <div className="mt-3">
                 <div className="mb-1.5 flex justify-between text-xs text-muted-foreground">
-                  <span>{t("home.nextBadge", { days: next.days - stats.streak, title: lang === "ar" ? next.ar.title : next.en.title })}</span>
+                  <span>
+                    {t("home.nextBadge", {
+                      days: next.days - stats.streak,
+                      title: lang === "ar" ? next.ar.title : next.en.title,
+                    })}
+                  </span>
                   <span className="tabular-nums">
                     {stats.streak}/{next.days}
                   </span>
@@ -247,7 +263,7 @@ export default function HomePage() {
                 />
               </div>
             ) : (
-              <p className="mt-3 text-xs text-[hsl(var(--success))]">{t("home.allBadges")}</p>
+              <p className="mt-3 text-xs font-medium text-success">{t("home.allBadges")}</p>
             )}
           </CardContent>
         </Card>
@@ -255,6 +271,7 @@ export default function HomePage() {
 
       <Section
         title={t("home.dailyQuote")}
+        accent="amber"
         action={
           <button
             type="button"
@@ -265,7 +282,7 @@ export default function HomePage() {
           </button>
         }
       >
-        <Card className="border-l-4 border-l-primary">
+        <Card className="border-l-4 border-l-primary bg-hero">
           <CardContent className="p-4">
             <p className="text-sm italic leading-relaxed">“{quote.text}”</p>
             <p className="mt-2 text-xs text-muted-foreground">— {quote.source}</p>
@@ -273,21 +290,12 @@ export default function HomePage() {
         </Card>
       </Section>
 
-      {/* Shelf numbers. */}
-      <Section title={t("home.yourShelf")}>
+      {/* Shelf numbers, each with its own accent. */}
+      <Section title={t("home.yourShelf")} accent="indigo">
         <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: t("home.books"), value: `${books.length}` },
-            { label: t("home.finished"), value: `${stats.booksFinished}` },
-            { label: t("home.sessions"), value: `${stats.totalSessions}` },
-          ].map((s) => (
-            <Card key={s.label}>
-              <CardContent className="flex flex-col items-center gap-0.5 p-4">
-                <span className="text-xl font-bold tabular-nums">{s.value}</span>
-                <span className="text-xs text-muted-foreground">{s.label}</span>
-              </CardContent>
-            </Card>
-          ))}
+          <StatTile icon="📚" label={t("home.books")} value={`${books.length}`} accent="amber" />
+          <StatTile icon="✅" label={t("home.finished")} value={`${stats.booksFinished}`} accent="teal" />
+          <StatTile icon="⏱️" label={t("home.sessions")} value={`${stats.totalSessions}`} accent="violet" />
         </div>
       </Section>
 

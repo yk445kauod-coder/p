@@ -37,17 +37,33 @@ export function Section({
   action,
   children,
   className,
+  accent,
 }: {
   title?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Draws a short tinted rule beside the title, to group a screen visually. */
+  accent?: "amber" | "teal" | "violet" | "rose" | "indigo";
 }) {
+  const rule = {
+    amber: "bg-primary",
+    teal: "bg-teal",
+    violet: "bg-violet",
+    rose: "bg-rose",
+    indigo: "bg-indigo",
+  }[accent ?? "amber"];
+
   return (
     <section className={cn("mt-6", className)}>
       {title || action ? (
         <div className="mb-3 flex items-center justify-between gap-3">
-          {title ? <h2 className="text-base font-semibold tracking-tight">{title}</h2> : null}
+          {title ? (
+            <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+              {accent ? <span className={cn("h-4 w-1 rounded-full", rule)} aria-hidden /> : null}
+              {title}
+            </h2>
+          ) : null}
           {action}
         </div>
       ) : null}
@@ -77,6 +93,46 @@ export function Stat({
         {value}
       </div>
       <div className="truncate text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+/** Accent names shared by the tinted blocks below. */
+export type Accent = "amber" | "teal" | "violet" | "rose" | "indigo";
+
+const TILE: Record<Accent, { icon: string; value: string; ring: string }> = {
+  amber: { icon: "bg-primary-soft text-primary-strong", value: "text-primary-strong", ring: "border-primary/20" },
+  teal: { icon: "bg-teal-soft text-teal-strong", value: "text-teal-strong", ring: "border-teal/20" },
+  violet: { icon: "bg-violet-soft text-violet-strong", value: "text-violet-strong", ring: "border-violet/20" },
+  rose: { icon: "bg-rose-soft text-rose-strong", value: "text-rose-strong", ring: "border-rose/20" },
+  indigo: { icon: "bg-indigo-soft text-indigo-strong", value: "text-indigo-strong", ring: "border-indigo/20" },
+};
+
+/**
+ * A metric tile with its own accent.
+ *
+ * Using a different accent per tile is what makes a stat row readable at a
+ * glance instead of a wall of identical boxes.
+ */
+export function StatTile({
+  icon,
+  label,
+  value,
+  accent = "amber",
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  accent?: Accent;
+}) {
+  const t = TILE[accent];
+  return (
+    <div className={cn("surface flex flex-col items-center gap-1.5 px-3 py-4 text-center", t.ring)}>
+      <span className={cn("grid h-9 w-9 place-items-center rounded-xl text-base", t.icon)} aria-hidden>
+        {icon}
+      </span>
+      <span className={cn("text-xl font-bold tabular-nums", t.value)}>{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }

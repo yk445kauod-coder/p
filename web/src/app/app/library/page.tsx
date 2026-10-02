@@ -32,6 +32,14 @@ const STATUS_KEY: Record<BookStatus, TranslationKey> = {
   paused: "library.status.paused",
 };
 
+/** Each status gets its own accent so a shelf is scannable at a glance. */
+const STATUS_TONE: Record<BookStatus, "amber" | "teal" | "violet" | "rose"> = {
+  reading: "teal",
+  finished: "rose",
+  wishlist: "violet",
+  paused: "amber",
+};
+
 /**
  * Library — the shelf.
  *
@@ -149,12 +157,17 @@ export default function LibraryPage() {
                     setSelected(book);
                   }
                 }}
-                className="cursor-pointer transition-colors hover:bg-accent/40"
+                className="surface-hover cursor-pointer overflow-hidden"
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   <div
-                    className="grid h-16 w-12 shrink-0 place-items-center rounded-md text-lg font-bold text-white"
-                    style={{ backgroundColor: book.coverColor ?? "hsl(var(--primary))" }}
+                    className="grid h-16 w-12 shrink-0 place-items-center rounded-lg text-lg font-bold text-white shadow-soft"
+                    style={{
+                      backgroundColor: book.coverColor ?? "hsl(var(--primary))",
+                      // A subtle inner sheen so the flat block reads as a spine.
+                      backgroundImage:
+                        "linear-gradient(135deg, hsl(0 0% 100% / 0.22), transparent 55%)",
+                    }}
                     aria-hidden
                   >
                     {book.title.slice(0, 1).toUpperCase()}
@@ -162,10 +175,7 @@ export default function LibraryPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <p className="truncate font-semibold">{book.title}</p>
-                      <Badge
-                        variant={book.status === "finished" ? "secondary" : "default"}
-                        className="shrink-0"
-                      >
+                      <Badge variant={STATUS_TONE[book.status]} className="shrink-0">
                         {t(STATUS_KEY[book.status])}
                       </Badge>
                     </div>
@@ -175,7 +185,7 @@ export default function LibraryPage() {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <Progress value={pct} className="h-1.5" />
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      <span className="shrink-0 text-xs font-medium tabular-nums text-teal-strong">
                         {Math.round(pct)}%
                       </span>
                     </div>

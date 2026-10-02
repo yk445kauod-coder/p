@@ -7,11 +7,11 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n";
 
-const TABS: { href: string; key: TranslationKey; Icon: typeof Home }[] = [
-  { href: "/app", key: "nav.home", Icon: Home },
-  { href: "/app/library", key: "nav.library", Icon: BookOpen },
-  { href: "/app/stats", key: "nav.stats", Icon: BarChart3 },
-  { href: "/app/profile", key: "nav.profile", Icon: User },
+const TABS: { href: string; key: TranslationKey; Icon: typeof Home; active: string }[] = [
+  { href: "/app", key: "nav.home", Icon: Home, active: "text-primary" },
+  { href: "/app/library", key: "nav.library", Icon: BookOpen, active: "text-teal" },
+  { href: "/app/stats", key: "nav.stats", Icon: BarChart3, active: "text-violet" },
+  { href: "/app/profile", key: "nav.profile", Icon: User, active: "text-rose" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -39,19 +39,19 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-lg grid-cols-4">
-          {TABS.map(({ href, key, Icon }) => {
-            const active = isActive(pathname, href);
+          {TABS.map(({ href, key, Icon, active }) => {
+            const on = isActive(pathname, href);
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  aria-current={active ? "page" : undefined}
+                  aria-current={on ? "page" : undefined}
                   className={cn(
                     "flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    on ? active : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className={cn("h-5 w-5", active && "stroke-[2.4]")} aria-hidden />
+                  <Icon className={cn("h-5 w-5", on && "stroke-[2.4]")} aria-hidden />
                   <span>{t(key)}</span>
                 </Link>
               </li>
@@ -67,18 +67,16 @@ export function BottomNav() {
           {t("app.name")}
         </Link>
         <ul className="flex flex-col gap-1">
-          {TABS.map(({ href, key, Icon }) => {
-            const active = isActive(pathname, href);
+          {TABS.map(({ href, key, Icon, active }) => {
+            const on = isActive(pathname, href);
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  aria-current={active ? "page" : undefined}
+                  aria-current={on ? "page" : undefined}
                   className={cn(
                     "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    on ? cn("bg-accent", active) : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
                   <Icon className="h-5 w-5" aria-hidden />

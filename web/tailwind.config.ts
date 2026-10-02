@@ -25,12 +25,15 @@ const config = {
 			},
 			colors: {
 				border: "hsl(var(--border))",
+				"border-strong": "hsl(var(--border-strong))",
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
 				primary: {
 					DEFAULT: "hsl(var(--primary))",
+					soft: "hsl(var(--primary-soft))",
+					strong: "hsl(var(--primary-strong))",
 					foreground: "hsl(var(--primary-foreground))",
 				},
 				secondary: {
@@ -39,6 +42,7 @@ const config = {
 				},
 				destructive: {
 					DEFAULT: "hsl(var(--destructive))",
+					soft: "hsl(var(--destructive-soft))",
 					foreground: "hsl(var(--destructive-foreground))",
 				},
 				muted: {
@@ -48,6 +52,40 @@ const config = {
 				accent: {
 					DEFAULT: "hsl(var(--accent))",
 					foreground: "hsl(var(--accent-foreground))",
+				},
+				teal: {
+					DEFAULT: "hsl(var(--teal))",
+					soft: "hsl(var(--teal-soft))",
+					strong: "hsl(var(--teal-strong))",
+					foreground: "hsl(var(--teal-foreground))",
+				},
+				violet: {
+					DEFAULT: "hsl(var(--violet))",
+					soft: "hsl(var(--violet-soft))",
+					strong: "hsl(var(--violet-strong))",
+					foreground: "hsl(var(--violet-foreground))",
+				},
+				rose: {
+					DEFAULT: "hsl(var(--rose))",
+					soft: "hsl(var(--rose-soft))",
+					strong: "hsl(var(--rose-strong))",
+					foreground: "hsl(var(--rose-foreground))",
+				},
+				indigo: {
+					DEFAULT: "hsl(var(--indigo))",
+					soft: "hsl(var(--indigo-soft))",
+					strong: "hsl(var(--indigo-strong))",
+					foreground: "hsl(var(--indigo-foreground))",
+				},
+				success: {
+					DEFAULT: "hsl(var(--success))",
+					soft: "hsl(var(--success-soft))",
+					foreground: "hsl(var(--success-foreground))",
+				},
+				warning: {
+					DEFAULT: "hsl(var(--warning))",
+					soft: "hsl(var(--warning-soft))",
+					foreground: "hsl(var(--warning-foreground))",
 				},
 				popover: {
 					DEFAULT: "hsl(var(--popover))",

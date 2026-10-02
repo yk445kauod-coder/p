@@ -16,10 +16,15 @@ export const metadata: Metadata = {
     "Track reading sessions, streaks, stats, quotes and goals with an AI reading coach. Installable, works offline, free to start.",
   manifest: "/manifest.webmanifest",
   applicationName: "TraceBook",
+  // `appleWebApp` emits the modern `mobile-web-app-capable` plus the Apple
+  // variants, which is what iOS actually reads.
   appleWebApp: {
     capable: true,
     title: "TraceBook",
     statusBarStyle: "default",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
   openGraph: {
     type: "website",

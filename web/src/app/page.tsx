@@ -24,6 +24,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import type { TranslationKey } from "@/i18n";
+import { cn } from "@/lib/utils";
 
 /**
  * Marketing page.
@@ -35,14 +36,28 @@ import type { TranslationKey } from "@/i18n";
 export default function LandingPage() {
   const { t } = useI18n();
 
-  const features: { Icon: typeof BookOpen; title: TranslationKey; body: TranslationKey }[] = [
-    { Icon: BookOpen, title: "landing.f1t", body: "landing.f1b" },
-    { Icon: Flame, title: "landing.f2t", body: "landing.f2b" },
-    { Icon: LineChart, title: "landing.f3t", body: "landing.f3b" },
-    { Icon: Timer, title: "landing.f4t", body: "landing.f4b" },
-    { Icon: Sparkles, title: "landing.f5t", body: "landing.f5b" },
-    { Icon: Target, title: "landing.f6t", body: "landing.f6b" },
+  const features: {
+    Icon: typeof BookOpen;
+    title: TranslationKey;
+    body: TranslationKey;
+    accent: "amber" | "teal" | "violet" | "rose" | "indigo";
+  }[] = [
+    { Icon: BookOpen, title: "landing.f1t", body: "landing.f1b", accent: "amber" },
+    { Icon: Flame, title: "landing.f2t", body: "landing.f2b", accent: "rose" },
+    { Icon: LineChart, title: "landing.f3t", body: "landing.f3b", accent: "teal" },
+    { Icon: Timer, title: "landing.f4t", body: "landing.f4b", accent: "violet" },
+    { Icon: Sparkles, title: "landing.f5t", body: "landing.f5b", accent: "indigo" },
+    { Icon: Target, title: "landing.f6t", body: "landing.f6b", accent: "teal" },
   ];
+
+  /** Icon chip + hover ring per accent, so cards read as distinct blocks. */
+  const FEATURE_TONE: Record<string, { chip: string; card: string }> = {
+    amber: { chip: "bg-primary-soft text-primary-strong", card: "hover:border-primary/40" },
+    teal: { chip: "bg-teal-soft text-teal-strong", card: "hover:border-teal/40" },
+    violet: { chip: "bg-violet-soft text-violet-strong", card: "hover:border-violet/40" },
+    rose: { chip: "bg-rose-soft text-rose-strong", card: "hover:border-rose/40" },
+    indigo: { chip: "bg-indigo-soft text-indigo-strong", card: "hover:border-indigo/40" },
+  };
 
   const freePlan: TranslationKey[] = [
     "landing.planFree1",
@@ -83,39 +98,47 @@ export default function LandingPage() {
       </header>
 
       {/* Hero. */}
-      <section className="mx-auto max-w-5xl px-4 pb-14 pt-12 text-center sm:pt-20">
-        <Badge variant="secondary" className="mx-auto mb-5 gap-1.5">
-          <WifiOff className="h-3.5 w-3.5" aria-hidden />
-          {t("landing.pill")}
-        </Badge>
-        <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-          {t("landing.h1a")}{" "}
-          <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            {t("landing.h1b")}
-          </span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          {t("landing.lede")}
-        </p>
+      <section className="relative isolate overflow-hidden">
+        <div className="bg-hero pointer-events-none absolute inset-0 -z-10" aria-hidden />
+        <div className="mx-auto max-w-5xl px-4 pb-14 pt-12 text-center sm:pt-20">
+          <Badge variant="amber" className="mx-auto mb-5 gap-1.5">
+            <WifiOff className="h-3.5 w-3.5" aria-hidden />
+            {t("landing.pill")}
+          </Badge>
+          <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
+            {t("landing.h1a")} <span className="text-gradient">{t("landing.h1b")}</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {t("landing.lede")}
+          </p>
 
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button size="lg" className="w-full rounded-full sm:w-auto" asChild>
-            <Link href="/app">{t("landing.openApp")}</Link>
-          </Button>
-          <Button size="lg" variant="outline" className="w-full rounded-full sm:w-auto" asChild>
-            <a href="#features">{t("landing.seeFeatures")}</a>
-          </Button>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button size="lg" className="w-full rounded-full shadow-lift sm:w-auto" asChild>
+              <Link href="/app">{t("landing.openApp")}</Link>
+            </Button>
+            <Button size="lg" variant="outline" className="w-full rounded-full sm:w-auto" asChild>
+              <a href="#features">{t("landing.seeFeatures")}</a>
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{t("landing.openAppSub")}</p>
+
+          <ul className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {(["landing.meta1", "landing.meta2", "landing.meta3", "landing.meta4"] as TranslationKey[]).map(
+              (k, i) => (
+                <li key={k} className="flex items-center gap-1.5">
+                  <Check
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      ["text-primary", "text-rose", "text-teal", "text-violet"][i % 4],
+                    )}
+                    aria-hidden
+                  />
+                  {t(k)}
+                </li>
+              ),
+            )}
+          </ul>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">{t("landing.openAppSub")}</p>
-
-        <ul className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-          {(["landing.meta1", "landing.meta2", "landing.meta3", "landing.meta4"] as TranslationKey[]).map((k) => (
-            <li key={k} className="flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-primary" aria-hidden />
-              {t(k)}
-            </li>
-          ))}
-        </ul>
       </section>
 
       {/* Features. */}
@@ -130,17 +153,20 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ Icon, title, body }) => (
-              <Card key={title}>
-                <CardContent className="p-5">
-                  <div className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-primary/10" aria-hidden>
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-semibold">{t(title)}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t(body)}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {features.map(({ Icon, title, body, accent }) => {
+              const tone = FEATURE_TONE[accent];
+              return (
+                <Card key={title} className={cn("transition-colors", tone.card)}>
+                  <CardContent className="p-5">
+                    <div className={cn("mb-3 grid h-10 w-10 place-items-center rounded-xl", tone.chip)} aria-hidden>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-semibold">{t(title)}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t(body)}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -165,7 +191,7 @@ export default function LandingPage() {
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {freePlan.map((k) => (
                     <li key={k} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--success))]" aria-hidden />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-teal" aria-hidden />
                       {t(k)}
                     </li>
                   ))}
@@ -177,23 +203,25 @@ export default function LandingPage() {
             </Card>
 
             {/* Pro */}
-            <Card className="relative flex flex-col border-primary/40 shadow-md">
-              <Badge className="absolute -top-3 left-6">{t("landing.planPopular")}</Badge>
+            <Card className="relative flex flex-col border-primary/40 bg-hero shadow-lift">
+              <Badge variant="amber" className="absolute -top-3 left-6">
+                {t("landing.planPopular")}
+              </Badge>
               <CardContent className="flex flex-1 flex-col p-6">
                 <h3 className="text-lg font-semibold">{t("landing.planProName")}</h3>
-                <div className="mt-2 text-3xl font-bold tracking-tight">
+                <div className="mt-2 text-3xl font-bold tracking-tight text-gradient">
                   {t("landing.planProPrice")}
                   <span className="text-base font-medium text-muted-foreground">{t("landing.planPerMonth")}</span>
                 </div>
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {proPlan.map((k) => (
                     <li key={k} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--success))]" aria-hidden />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
                       {t(k)}
                     </li>
                   ))}
                 </ul>
-                <Button className="mt-6 w-full" asChild>
+                <Button className="mt-6 w-full shadow-lift" asChild>
                   <Link href="/app/profile">{t("landing.planProCta")}</Link>
                 </Button>
               </CardContent>
@@ -218,12 +246,19 @@ export default function LandingPage() {
               <li key={n}>
                 <Card className="h-full">
                   <CardContent className="p-5">
-                    <div className="mb-3 grid h-9 w-9 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+                    <div
+                      className={cn(
+                        "mb-3 grid h-9 w-9 place-items-center rounded-xl text-sm font-bold",
+                        [
+                          "bg-primary text-primary-foreground",
+                          "bg-violet text-violet-foreground",
+                          "bg-teal text-teal-foreground",
+                        ][n - 1],
+                      )}
+                    >
                       {n}
                     </div>
-                    <h3 className="font-semibold">
-                      {t(`landing.s${n}t` as TranslationKey)}
-                    </h3>
+                    <h3 className="font-semibold">{t(`landing.s${n}t` as TranslationKey)}</h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                       {t(`landing.s${n}b` as TranslationKey)}
                     </p>

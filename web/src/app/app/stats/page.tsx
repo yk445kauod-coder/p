@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useData } from "@/store/data";
 import { useI18n } from "@/i18n/provider";
-import { PageHeader, Section, Stat } from "@/components/page";
+import { PageHeader, Section, StatTile } from "@/components/page";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -90,32 +90,16 @@ export default function StatsPage() {
         ))}
       </div>
 
-      {/* KPI grid: two columns on phones. */}
+      {/* KPI grid: two columns on phones, each with its own accent. */}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {[
-          { label: t("stats.currentStreak"), value: t("stats.daysShort", { count: stats.streak }), tone: "primary" as const },
-          { label: t("stats.bestStreak"), value: t("stats.daysShort", { count: stats.bestStreak }) },
-          { label: t("stats.activeDays"), value: `${activeDays}` },
-          { label: t("stats.missedDays"), value: `${stats.missed}` },
-        ].map((k) => (
-          <Card key={k.label}>
-            <CardContent className="flex flex-col items-center gap-0.5 p-4">
-              <span
-                className={cn(
-                  "text-2xl font-bold tabular-nums",
-                  k.tone === "primary" && "text-primary",
-                )}
-              >
-                {k.value}
-              </span>
-              <span className="text-center text-xs text-muted-foreground">{k.label}</span>
-            </CardContent>
-          </Card>
-        ))}
+        <StatTile icon="🔥" label={t("stats.currentStreak")} value={t("stats.daysShort", { count: stats.streak })} accent="amber" />
+        <StatTile icon="🏆" label={t("stats.bestStreak")} value={t("stats.daysShort", { count: stats.bestStreak })} accent="rose" />
+        <StatTile icon="📖" label={t("stats.activeDays")} value={`${activeDays}`} accent="teal" />
+        <StatTile icon="💤" label={t("stats.missedDays")} value={`${stats.missed}`} accent="violet" />
       </div>
 
       {stats.startDate ? (
-        <Card className="mt-3">
+        <Card className="mt-3 border-teal/20 bg-mint">
           <CardContent className="flex items-center justify-between gap-3 p-4">
             <div className="min-w-0">
               <p className="text-sm font-medium">{t("stats.journeyStart")}</p>
@@ -123,7 +107,7 @@ export default function StatsPage() {
                 {t("stats.journeyStartValue", { date: formatDay(stats.startDate, lang) })}
               </p>
             </div>
-            <Badge variant="secondary" className="shrink-0">
+            <Badge variant="teal" className="shrink-0">
               {t("stats.journeyDays", { count: daysSince(stats.startDate) })}
             </Badge>
           </CardContent>
@@ -131,7 +115,11 @@ export default function StatsPage() {
       ) : null}
 
       {/* Minutes per day: a compact bar row, no chart library needed. */}
-      <Section title={t("stats.range")} action={<span className="text-xs tabular-nums text-muted-foreground">{rangeMinutes} min</span>}>
+      <Section
+        title={t("stats.range")}
+        accent="amber"
+        action={<span className="text-xs tabular-nums text-muted-foreground">{rangeMinutes} min</span>}
+      >
         <Card>
           <CardContent className="p-4">
             <div className="flex h-24 items-end gap-[3px]">
@@ -155,7 +143,7 @@ export default function StatsPage() {
         </Card>
       </Section>
 
-      <Section title={t("stats.consistency")}>
+      <Section title={t("stats.consistency")} accent="teal">
         <Card>
           <CardContent className="p-4">
             <ActivityHeatmap days={stats.last30} />
@@ -163,7 +151,7 @@ export default function StatsPage() {
         </Card>
       </Section>
 
-      <Section title={t("stats.whereTime")}>
+      <Section title={t("stats.whereTime")} accent="violet">
         <Card>
           <CardContent className="p-4">
             {byBook.length === 0 ? (
@@ -174,13 +162,13 @@ export default function StatsPage() {
                   <div key={book!.id} className="flex items-center gap-2">
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: book!.coverColor ?? "hsl(var(--primary))" }}
+                      style={{ backgroundColor: book!.coverColor ?? "hsl(var(--violet))" }}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1 truncate text-sm">{book!.title}</span>
                     <div className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full rounded-full bg-primary"
+                        className="h-full rounded-full bg-violet"
                         style={{ width: `${(minutes / maxBook) * 100}%` }}
                       />
                     </div>
@@ -195,7 +183,7 @@ export default function StatsPage() {
         </Card>
       </Section>
 
-      <Section title={t("stats.milestones")}>
+      <Section title={t("stats.milestones")} accent="rose">
         <Card>
           <CardContent className="p-4">
             <p className="mb-3 text-xs text-muted-foreground">{t("stats.milestonesHint")}</p>
@@ -205,14 +193,20 @@ export default function StatsPage() {
                 const meta = lang === "ar" ? b.ar : b.en;
                 return (
                   <div key={b.id} className="flex items-center gap-3">
-                    <span className={cn("text-lg", !got && "opacity-50")} aria-hidden>
+                    <span
+                      className={cn(
+                        "grid h-9 w-9 shrink-0 place-items-center rounded-xl text-base",
+                        got ? "bg-rose-soft" : "bg-muted",
+                      )}
+                      aria-hidden
+                    >
                       {got ? b.icon : "🔒"}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{meta.title}</p>
                       <p className="truncate text-xs text-muted-foreground">{meta.desc}</p>
                     </div>
-                    <Badge variant={got ? "secondary" : "outline"} className="shrink-0">
+                    <Badge variant={got ? "rose" : "outline"} className="shrink-0">
                       {got ? t("stats.unlocked") : t("stats.inDays", { count: b.days - stats.streak })}
                     </Badge>
                   </div>
@@ -223,7 +217,7 @@ export default function StatsPage() {
         </Card>
       </Section>
 
-      <Section title={t("stats.averages")}>
+      <Section title={t("stats.averages")} accent="indigo">
         <Card>
           <CardContent className="divide-y divide-border p-4">
             {[
@@ -234,7 +228,7 @@ export default function StatsPage() {
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
                 <span className="text-sm text-muted-foreground">{row.label}</span>
-                <span className="text-sm font-medium tabular-nums">{row.value}</span>
+                <span className="text-sm font-semibold tabular-nums">{row.value}</span>
               </div>
             ))}
           </CardContent>

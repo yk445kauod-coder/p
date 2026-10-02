@@ -7,13 +7,13 @@ offline-first web app (PWA).
 ## Layout
 
 ```
-web/       Next.js 14 app — landing at /, the reader at /app/, admin at /admin
+web/       Next.js 14 app ŌĆö landing at /, the reader at /app/, admin at /admin
 supabase/  Edge functions: agent/ (AI coach), push/ (Web Push delivery)
 ```
 
 `web/` is a static export (`output: "export"`), so the whole app is prerendered
 files deployed to Cloudflare Pages. Anything that needs a secret lives in a
-Supabase edge function rather than a Next API route — do not add `web/src/app/api/*`.
+Supabase edge function rather than a Next API route ŌĆö do not add `web/src/app/api/*`.
 
 ## Commands
 
@@ -26,7 +26,7 @@ npx next lint           # lint
 ```
 
 `web/.env.local` holds only publishable values (`NEXT_PUBLIC_*`): the Supabase
-URL and anon key. With neither set the app still runs — it is local-first and
+URL and anon key. With neither set the app still runs ŌĆö it is local-first and
 only needs Supabase for cross-device sync.
 
 ## How it is put together
@@ -36,8 +36,8 @@ only needs Supabase for cross-device sync.
   wraps Dexie in `useLiveQuery`, so any screen re-renders the moment a row changes.
 - **Sync is a mirror, not the source of truth.** `web/src/lib/sync.ts` pushes
   local rows to Supabase and pulls the server copy back, for signed-in readers
-  only. It maps the app's camelCase model onto the Postgres schema — note
-  `reading_sessions.started_at` ↔ `day`, and `daily_entries.entry_date` ↔ `day`.
+  only. It maps the app's camelCase model onto the Postgres schema ŌĆö note
+  `reading_sessions.started_at` Ōåö `day`, and `daily_entries.entry_date` Ōåö `day`.
 - **The domain is pure.** `web/src/lib/reading.ts` holds the streak maths, the
   plan projection, the badge table and the category list. Nothing there touches
   React or storage, which is what makes it cheap to test.
@@ -50,7 +50,7 @@ only needs Supabase for cross-device sync.
 Signing in is **optional**. The app is fully usable as a guest; an account only
 exists to mirror the local store across devices. `web/src/store/auth.tsx` owns
 the session, `web/src/lib/supabase.ts` the client, and `web/src/lib/sync.ts` the
-push/pull. There is no server-side session — a static build cannot hold one.
+push/pull. There is no server-side session ŌĆö a static build cannot hold one.
 
 ## Edge functions
 
@@ -61,7 +61,7 @@ secret ever reaches the browser bundle.
 
 Provider config is resolved **per request** by `resolveConfig()`: it reads
 `OPENROUTER_API_KEY` / `AI_MODEL` / `AI_BASE_URL` from the admin vault first and
-falls back to environment variables. That is deliberate — a key rotated in the
+falls back to environment variables. That is deliberate ŌĆö a key rotated in the
 admin console takes effect immediately, with no redeploy.
 
 `supabase/functions/push/index.ts` delivers Web Push notifications.
@@ -77,12 +77,12 @@ and raises `42501` otherwise. The browser never decides who is an admin, so
 reaching `/admin` without the role renders a warning and nothing else.
 
 **Bootstrap.** `admin_claim()` makes the first authenticated caller the admin and
-then returns `false forever` — a stranger can never self-promote on a live
+then returns `false forever` ŌĆö a stranger can never self-promote on a live
 project. Call it once from `/admin` after signing in.
 
 **Keys live in Supabase Vault.** `admin_set_secret()` writes the value into
 `vault.secrets` (encrypted at rest) and stores only a registry row in
-`public.app_secrets` mapping name → vault id. `admin_list_secrets()` therefore
+`public.app_secrets` mapping name ŌåÆ vault id. `admin_list_secrets()` therefore
 never returns a value; reading one requires the separate, audited
 `admin_reveal_secret()`. `get_app_secret()` is the server-side path and is
 granted to `service_role` only.
@@ -103,7 +103,7 @@ The route is `noindex` and disallowed in `robots.txt`.
 
 ## i18n
 
-Two locales ship: `en` and Egyptian-dialect `ar` (مصري), in
+Two locales ship: `en` and Egyptian-dialect `ar` (┘ģžĄž▒┘Ŗ), in
 `web/src/i18n/{en,ar}.ts`. Keys are flat (`home.greetingMorning`) and
 placeholders are `{name}`.
 
@@ -111,7 +111,7 @@ placeholders are `{name}`.
   error** and fails the build. Add every new key to both.
 - `provider.tsx` syncs `<html lang>` and `<html dir>`, which is what makes RTL
   work. The choice persists in the local preferences row.
-- Write the Arabic in Egyptian colloquial (بتقرأ / خلّي / على طول), not MSA.
+- Write the Arabic in Egyptian colloquial (ž©ž¬┘éž▒žŻ / ž«┘ä┘æ┘Ŗ / ž╣┘ä┘ē žĘ┘ł┘ä), not MSA.
 
 ## Mobile first
 
@@ -121,7 +121,7 @@ Mobile is the primary target; desktop is the adaptation.
   the same links as a left rail from `md` up.
 - Safe areas come from `env(safe-area-inset-*)` via the `pt-safe` / `pb-safe` /
   `pb-nav` utilities in `globals.css`. `viewportFit: "cover"` is set in the root
-  layout — without it those insets do nothing on iOS.
+  layout ŌĆö without it those insets do nothing on iOS.
 - Inputs are forced to 16px so iOS never zooms on focus.
 - Tap targets are at least `min-h-9` (36px), usually 44px+.
 - Filter strips scroll horizontally rather than wrapping, so options stay
@@ -140,7 +140,7 @@ cd web && npx next build          # -> web/out
 npx wrangler pages deploy out --project-name=tracebook --branch=main
 ```
 
-Preview locally with `python3 -m http.server -d web/out` — the app must be served
+Preview locally with `python3 -m http.server -d web/out` ŌĆö the app must be served
 over HTTP, not opened as a `file://` path, or the service worker will not register.
 
 `web/src/components/service-worker-registrar.tsx` registers the generated
@@ -150,22 +150,34 @@ snippet on a static export.
 ## Conventions
 
 - Colours come from the CSS variables in `globals.css` (`bg-background`,
-  `text-muted-foreground`, `border-border`, `text-primary`…). Never hardcode a
+  `text-muted-foreground`, `border-border`, `text-primary`ŌĆ”). Never hardcode a
   hue; both themes are defined by swapping those variables.
 - Build UI from the shadcn primitives in `web/src/components/ui/`, and the shared
   layout blocks in `web/src/components/page.tsx` (`PageHeader`, `Section`, `Stat`,
   `EmptyState`) rather than repeating Tailwind chains.
 - All copy goes through `useI18n().t(...)`.
 - Writes go through `useData()`; never touch Dexie from a component.
-- Charts and progress are plain CSS/SVG — do not add a charting dependency for a
+- Charts and progress are plain CSS/SVG ŌĆö do not add a charting dependency for a
   bar row or a heatmap.
 
 ## Brand assets
 
 ```bash
-cd web && python3 scripts/make_icons.py   # needs pillow
+cd web && python3 scripts/make_icons.py   # needs cairosvg + pillow
 ```
 
-Renders `icon512_rounded.png`, `icon512_maskable.png`, `apple-touch-icon.png`
-and `favicon-64.png` into `web/public/` from
-`web/public/brand/logo-mark.png`.
+Everything derives from **one vector**, `web/public/brand/book-mark.svg` — an
+open book on a dark plate with a bookmark ribbon, drawn on a 64 grid from four
+shapes so it still reads as a book at 16px. The script rasterises:
+
+`favicon-16/32/64.png`, `icon-192.png`, `icon-512.png`, `icon512_maskable.png`,
+`apple-touch-icon.png` and a multi-resolution `favicon.ico`.
+
+The `.ico` and the PNGs live in `public/`, not `src/app/`. Next's file
+convention for `app/favicon.ico` takes over the icon metadata and suppresses
+`metadata.icons` in `layout.tsx`; keeping it in `public/` is what lets all six
+per-size `<link rel="icon">` tags emit.
+
+In-app, render the mark with `<BookMark>` / `<Wordmark>` from
+`components/book-mark.tsx` rather than an icon font, so the tab icon and the
+logo inside the app can never drift apart.

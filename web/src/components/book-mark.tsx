@@ -12,13 +12,13 @@ import { cn } from "@/lib/utils";
 export function BookMark({ size = 28, className }: { size?: number; className?: string }) {
   return (
     <Image
-      src="/tracebook-mark.png"
+      src="/brand/book-mark.svg"
       alt=""
       width={size}
       height={size}
       // Decorative next to the wordmark, which carries the accessible name.
       aria-hidden
-      className={cn("shrink-0 rounded-xl object-contain", className)}
+      className={cn("shrink-0 rounded-[15px]", className)}
       priority
     />
   );
@@ -39,7 +39,7 @@ export function Wordmark({
   return (
     <span className={cn("flex items-center gap-2", className)}>
       <BookMark size={size} />
-      <span className={cn("font-bold tracking-[-0.045em]", labelClassName)}>TraceBook</span>
+      <span className={cn("text-display font-bold tracking-[-0.055em]", labelClassName)}>TraceBook</span>
     </span>
   );
 }

@@ -76,6 +76,11 @@ export function buildEdges(notes: Note[]): NoteEdge[] {
         resolved: Boolean(target),
       });
     }
+    for (const linkedId of note.linkedNoteIds ?? []) {
+      const target = notes.find((candidate) => candidate.id === linkedId);
+      if (!target || target.id === note.id) continue;
+      edges.push({ from: note.id, to: target.id, target: target.title, resolved: true });
+    }
   }
   return edges;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, BrainCircuit, FileText, Home, User } from "lucide-react";
+import { BarChart3, BookOpen, BrainCircuit, FileText, Home, ShieldCheck, User } from "lucide-react";
 import { Wordmark } from "@/components/book-mark";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -93,6 +93,10 @@ export function BottomNav() {
             );
           })}
         </ul>
+        <Link href="/admin" className="mt-auto flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <ShieldCheck className="h-5 w-5" aria-hidden />
+          Admin
+        </Link>
       </aside>
     </>
   );

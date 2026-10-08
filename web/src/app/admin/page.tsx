@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
+import { useData } from "@/store/data";
 import { useI18n } from "@/i18n/provider";
 import { BookMark } from "@/components/book-mark";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
   type AdminSecret,
 } from "@/lib/admin";
 import { cn, formatDay } from "@/lib/utils";
+import type { Stats } from "@/data/types";
 
 type Tab = "overview" | "users" | "secrets";
 
@@ -47,7 +49,8 @@ type Tab = "overview" | "users" | "secrets";
  * signed-in caller can claim the console once; after that it is closed.
  */
 export default function AdminPage() {
-  const { reader, ready } = useAuth();
+  const { reader, ready, cloudAvailable } = useAuth();
+  const { stats: localStats, books: localBooks, sessions: localSessions } = useData();
   const { t } = useI18n();
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -97,6 +100,10 @@ export default function AdminPage() {
     const id = setTimeout(() => void load(), 250);
     return () => clearTimeout(id);
   }, [search, tab, isAdmin, load]);
+
+  if (ready && !cloudAvailable) {
+    return <LocalAdmin stats={localStats} books={localBooks.length} sessions={localSessions.length} />;
+  }
 
   const claim = async () => {
     setBusy(true);
@@ -198,6 +205,10 @@ export default function AdminPage() {
       {tab === "secrets" ? <SecretsTab secrets={secrets} onChanged={load} /> : null}
     </Shell>
   );
+}
+
+function LocalAdmin({ stats, books, sessions }: { stats: Stats; books: number; sessions: number }) {
+  return <Shell><header className="mb-6 flex items-center justify-between gap-3"><div className="flex items-center gap-3"><BookMark size={44} /><div><h1 className="text-xl font-bold tracking-tight">Local Admin</h1><p className="text-xs text-muted-foreground">Local-first workspace diagnostics</p></div></div><Badge variant="amber">offline mode</Badge></header><Card className="skeuo-surface border-primary/20 bg-streak"><CardContent className="p-5"><h2 className="text-lg font-bold">Admin is active locally</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">This build has no Supabase project configured, so cloud user management and vault controls are intentionally locked. Your local workspace is still inspectable here. Connect Supabase to unlock the server-authorised admin console.</p><Button className="mt-4" asChild><a href="/app/profile">Open connection settings</a></Button></CardContent></Card><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Books", books], ["Sessions", sessions], ["Minutes", Math.round(stats.totalMinutes)], ["Pages", stats.totalPages]].map(([label, value]) => <Card key={String(label)} className="skeuo-surface"><CardContent className="p-4"><div className="text-2xl font-bold tnum">{value}</div><div className="mt-1 text-xs text-muted-foreground">{label}</div></CardContent></Card>)}</div></Shell>;
 }
 
 /** Page chrome — deliberately separate from the reader shell. */

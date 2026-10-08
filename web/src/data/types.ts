@@ -56,6 +56,8 @@ export interface Note {
   bookId: string | null;
   /** Free-form tags. */
   tags: string[];
+  /** Note ids selected visually in the knowledge workspace. */
+  linkedNoteIds?: string[];
   /** Pinned notes sort first. */
   pinned: boolean;
 }

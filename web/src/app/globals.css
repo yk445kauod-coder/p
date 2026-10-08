@@ -223,6 +223,18 @@
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(18px);
   }
+  .skeuo-surface {
+    @apply rounded-2xl border border-black/10 bg-card;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.78), inset 0 -2px 4px hsl(24 20% 12% / 0.06), 0 3px 8px hsl(24 20% 12% / 0.12);
+  }
+  .skeuo-control {
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.85), inset 0 -2px 3px hsl(24 20% 12% / 0.08), 0 1px 2px hsl(24 20% 12% / 0.1);
+  }
+  .skeuo-control:active,
+  .skeuo-pressed {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px hsl(24 20% 12% / 0.16), 0 0 0 hsl(0 0% 0% / 0);
+  }
   .app-shell {
     background-image: linear-gradient(hsl(var(--border) / 0.18) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.18) 1px, transparent 1px);
     background-size: 40px 40px;

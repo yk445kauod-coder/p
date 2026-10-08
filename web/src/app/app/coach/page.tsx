@@ -45,20 +45,23 @@ export default function CoachPage() {
     setPrompt("");
     setError(null);
     setMessages((current) => [...current, { role: "user", text }]);
-    if (!supabase || !cloudAvailable || !reader) {
-      setError(lang === "ar" ? "فهم الحقيقي يحتاج تسجيل دخول وربط Supabase. لن أزوّق لك ردًا وهميًا." : "Live Fahm needs a signed-in Supabase connection. I won’t fake an answer offline.");
-      return;
-    }
     setBusy(true);
     try {
       const history = [...messages, { role: "user" as const, text }].slice(-12).map((m) => ({ role: m.role, content: m.text }));
-      const { data, error: invokeError } = await supabase.functions.invoke("agent", {
-        body: { messages: history, context: localSnapshot, allowActions: true, stream: false },
-      });
-      if (invokeError) throw invokeError;
+      let data: { content?: string; error?: string; toolCalls?: { name?: string }[] } | null = null;
+      if (supabase && cloudAvailable && reader) {
+        const result = await supabase.functions.invoke("agent", { body: { messages: history, context: localSnapshot, allowActions: true, stream: false } });
+        if (result.error) throw result.error;
+        data = result.data;
+      } else {
+        const result = await fetch("/api/agent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: history, context: localSnapshot }) });
+        data = await result.json();
+        if (!result.ok) throw new Error(data?.error ?? `http_${result.status}`);
+      }
       if (!data?.content) throw new Error(data?.error ?? "empty_ai_response");
-      const tools = Array.isArray(data.toolCalls) ? data.toolCalls.map((call: { name?: string }) => call.name).filter(Boolean) : [];
-      setMessages((current) => [...current, { role: "assistant", text: data.content, toolCalls: tools }]);
+      const content = data.content;
+      const tools: string[] = Array.isArray(data.toolCalls) ? data.toolCalls.map((call: { name?: string }) => call.name).filter((name): name is string => Boolean(name)) : [];
+      setMessages((current) => [...current, { role: "assistant", text: content, toolCalls: tools }]);
     } catch (cause) {
       setError(lang === "ar" ? `حصل خطأ أثناء اتصال فهم: ${(cause as Error).message}` : `Fahm could not complete that request: ${(cause as Error).message}`);
     } finally {
